@@ -18,18 +18,19 @@
 6. [Métricas del Proyecto](#métricas-del-proyecto)
 7. [Instalación y Uso](#instalación-y-uso)
 8. [Documentación de la API](#documentación-de-la-api)
-9. [Base de datos](#base-de-datos)
-10. [Reglas y cálculos](#reglas-y-cálculos)
-11. [Los cinco diseños](#los-cinco-diseños)
-12. [Estructura del proyecto](#estructura-del-proyecto)
-13. [Pruebas](#pruebas)
-14. [Despliegue en la nube](#despliegue-en-la-nube)
-15. [Límites que debes conocer](#límites-que-debes-conocer)
-16. [Solución de problemas](#solución-de-problemas)
-17. [Mejoras futuras](#mejoras-futuras)
-18. [Lecciones aprendidas](#lecciones-aprendidas)
-19. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-20. [Enlaces importantes](#enlaces-importantes)
+9. [Atajo para iPhone](#atajo-para-iphone)
+10. [Base de datos](#base-de-datos)
+11. [Reglas y cálculos](#reglas-y-cálculos)
+12. [Los cinco diseños](#los-cinco-diseños)
+13. [Estructura del proyecto](#estructura-del-proyecto)
+14. [Pruebas](#pruebas)
+15. [Despliegue en la nube](#despliegue-en-la-nube)
+16. [Límites que debes conocer](#límites-que-debes-conocer)
+17. [Solución de problemas](#solución-de-problemas)
+18. [Mejoras futuras](#mejoras-futuras)
+19. [Lecciones aprendidas](#lecciones-aprendidas)
+20. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+21. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -597,6 +598,7 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/historial/serie?periodo=&localidad=` | Cuánto llovió en cada intervalo (por hora en `6h` y `24h`, por día en `7d` y `30d`). |
 | `GET /api/historial/ranking?periodo=` | Localidades ordenadas por lo que llovió en el periodo. |
 | `GET /api/historial/destino?lat=&lon=&periodo=` | Cuándo llovió cerca de un punto (las 3 estaciones más cercanas). |
+| `GET /api/atajo?q=` | Una frase en texto plano que dice si llueve en un destino; pensada para el atajo de iPhone. |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
 
@@ -619,6 +621,45 @@ curl "http://localhost:8000/api/ruta?origen=Portal%2080&destino=Chapinero&modo=b
 ```
 
 **Códigos de error útiles:** `502` si el SAB no responde; `503` si un servicio de geocodificación o de rutas falla por red (conviene reintentar: la app **no** responde «no existe» cuando en realidad fue un fallo de red).
+
+---
+
+## Atajo para iPhone
+
+El endpoint **`GET /api/atajo?q=...`** responde **una frase en texto plano**, pensada para la app **Atajos** del iPhone: se escribe (o se dicta) un destino y el teléfono muestra o lee en voz alta si llueve allí.
+
+Acepta lo mismo que `/api/destino`: una localidad, un barrio, un lugar, una dirección, una esquina o coordenadas `lat,lon` (con la acción «Obtener ubicación actual» del iPhone se puede enviar la posición del teléfono).
+
+**Ejemplos de respuesta**
+
+| Situación | Respuesta |
+|---|---|
+| No llueve | `No llueve cerca de Quinta Camacho, Chapinero. Ninguna estación cercana registra lluvia ahora.` |
+| No llueve, pero llovió hoy | `No llueve cerca de Quinta Camacho, Chapinero. Hoy cayeron 7,4 mm en la estación más cercana.` |
+| Llueve | `Sí, llueve cerca de Quinta Camacho, Chapinero. Colegio Simón Rodríguez, a 1,8 km, marca lluvia fuerte (13,2 mm/h).` |
+| Lecturas viejas | `No se puede asegurar para Quinta Camacho, Chapinero: las estaciones más cercanas no tienen lectura reciente.` |
+| Destino no encontrado | `No encontré «xyz». Prueba con otra dirección o con un barrio.` |
+
+Si la ubicación es aproximada, la frase termina con «(Ubicación aproximada.)». Si el SAB o el buscador fallan, responde con un mensaje de texto y el código 502 o 503.
+
+```bash
+curl "http://localhost:8000/api/atajo?q=Calle%2072%20con%20Carrera%2010"
+```
+
+### Cómo crear el atajo en el iPhone
+
+En la app **Atajos**, crear un atajo nuevo (llamado, por ejemplo, «¿Llueve?») con estas acciones, en orden:
+
+1. **Solicitar entrada**, de tipo *Texto*, con la pregunta «¿A dónde vas?».
+2. **Obtener contenido de URL**, con la dirección `https://TU-URL/api/atajo?q=` seguida de la variable **Entrada proporcionada**.
+3. **Mostrar resultado** (o **Pronunciar texto**, para que lo diga en voz alta).
+
+Después se puede añadir a la pantalla de inicio o usar con Siri. Si una dirección con espacios no responde, hay que comprobar que el atajo la envíe codificada (los espacios como `%20`).
+
+### Estado y requisitos
+
+- **Probado:** el endpoint con cinco búsquedas reales (esquina, lugar, localidad, coordenadas y un texto inexistente) en el servidor local, y las frases de «llueve», «llovió hoy» y «sin lectura reciente» con datos de ejemplo.
+- **Pendiente:** probar el atajo **desde un iPhone**. El teléfono tiene que poder llegar al servidor. Con el computador en una red corporativa por cable no es posible (el firewall de dominio bloquea las conexiones entrantes y la red del teléfono suele ser otra), así que hace falta la **URL pública del despliegue** en la nube. Con una URL con HTTPS funciona desde cualquier red.
 
 ---
 
@@ -753,7 +794,7 @@ Cumulonimbus/
 │   ├── app/
 │   │   ├── main.py                # Arranque de FastAPI; sirve también el frontend compilado
 │   │   ├── config.py              # Configuración (.env)
-│   │   ├── api/routes/            # Endpoints: lluvia, destino, mapa, radar, historial, ruta, health
+│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo, mapa, radar, historial, ruta, health
 │   │   ├── services/              # Lógica: cliente SAB, reglas de lluvia, geocodificación,
 │   │   │                          #         historial, ruta, radar, barrios
 │   │   ├── repositories/          # Lectura y escritura en PostgreSQL
@@ -884,7 +925,7 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Historial por horas y por días |
 | ✅ | Ruta de un lugar a otro |
 | ✅ | Radar con filtro de ecos débiles y zonas de color por estación |
-| ⏳ | Atajo para iPhone (una respuesta en texto plano de «¿llueve aquí?») |
+| 🟡 | Atajo para iPhone: endpoint listo y probado en el servidor local; falta probarlo en un iPhone con la URL pública |
 | 🟡 | Docker: archivos escritos, falta la primera construcción real |
 | ⏳ | Guía de despliegue en un proveedor concreto |
 
