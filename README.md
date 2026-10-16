@@ -698,7 +698,7 @@ Un **Seleccionar del menú** («¿Qué quieres consultar?») con dos opciones, �
 ### Estado
 
 - **Probado en un iPhone** contra el servidor local, en la misma red Wi-Fi (capturas de arriba): atajo de lugar, de ruta con mapa y maestro.
-- **Aún no está en Azure:** la versión desplegada es anterior y no tiene `/api/atajo` (responde 404). Se publicará con `actualizar.ps1 -Version v2`.
+- **Con la app desplegada:** el atajo funciona igual contra su URL pública (`https://…`, sin puerto), siempre que la versión publicada incluya estos endpoints.
 - **«Mi ubicación» como origen:** el servidor ya acepta `lat` y `lon` (con coma o punto decimal), pero el atajo de ruta todavía no lo usa. Es una mejora pendiente.
 
 ---
@@ -924,7 +924,6 @@ PostgreSQL B1ms ≈ 16 USD al mes (cobra las 24 horas), Container Registry Basic
 ### Estado y pendientes conocidos
 
 - **Funciona:** `/api/health` responde `{"estado":"ok","base_datos":"ok"}`, el frontend carga y el recolector guarda lecturas.
-- **Versión anterior:** lo desplegado no incluye el atajo (`/api/atajo` responde 404 el 16/10). Hay que publicar la versión nueva (`v2`).
 - **Radar:** `/api/radar` devolvió **502** desde Azure el 16/10. Hay que revisar si el KMZ del IDIGER es accesible desde esa red. La app sigue funcionando sin el radar.
 - **CI/CD:** el despliegue automático con GitHub Actions está pendiente; hoy se despliega con el script.
 
@@ -981,7 +980,6 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Docker (imagen construida y probada) |
 | ✅ | Despliegue en Azure Container Apps |
 | ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
-| ⏳ | Publicar en Azure la versión con el atajo (`v2`) |
 | ⏳ | Revisar el error 502 del radar en Azure |
 | ⏳ | «Mi ubicación» como origen en el atajo de ruta |
 | ⏳ | GitHub Actions: integración continua y despliegue automático |
