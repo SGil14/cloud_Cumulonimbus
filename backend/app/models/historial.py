@@ -29,6 +29,23 @@ class SerieHistorial(BaseModel):
     cobertura_pct: int  # % de intervalos con al menos una lectura
 
 
+class ItemRanking(BaseModel):
+    localidad: str
+    total_mm: float
+    max_estacion_mm: float
+    estaciones: int
+
+
+class RankingHistorial(BaseModel):
+    periodo: Periodo
+    paso: Paso
+    desde: datetime
+    hasta: datetime
+    datos_desde: datetime | None
+    cobertura_pct: int
+    items: list[ItemRanking]
+
+
 class SerieEstacion(BaseModel):
     id_sensor: int
     nombre: str
