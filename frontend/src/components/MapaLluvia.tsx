@@ -32,6 +32,26 @@ const ESCALA_MM = [0, 3, 10, 30, 50, 80];
 const ZONA_URBANA: LngLatBoundsLike = [[-74.24, 4.37], [-73.98, 4.82]];
 const LIMITES_MAXIMOS: LngLatBoundsLike = [[-75.4, 3.6], [-72.8, 5.8]];
 
+// Colores y alcance de la zona que se pinta alrededor de cada estación que llueve (los mismos del punto y del radar).
+const COLOR_ZONA = {
+  oscuro: { ligera: "#4ab8ff", moderada: "#ffd23f", fuerte: "#ff8a1f", muy_fuerte: "#ff3b3b" },
+  claro: { ligera: "#1e7bff", moderada: "#f0be00", fuerte: "#ff6e00", muy_fuerte: "#c8001e" },
+};
+const RADIO_ZONA_M = { ligera: 2500, moderada: 3500, fuerte: 4500, muy_fuerte: 5500 };
+// Metros → píxeles: a latitud 4,6° un píxel de zoom 0 (teselas de 512) son ~78 km.
+const PX_POR_METRO_Z8 = 256 / 78016;
+const PX_POR_METRO_Z16 = 65536 / 78016;
+
+/** La zona se desvanece al acercar el mapa: a zoom de calle un halo de varios kilómetros taparía todo. */
+function opacidadZona(base: number) {
+  return ["interpolate", ["linear"], ["zoom"], 10.5, base, 12.5, base * 0.45, 14.5, base * 0.12] as never;
+}
+
+function colorZona(tema: "claro" | "oscuro") {
+  const c = COLOR_ZONA[tema];
+  return ["match", ["get", "intensidad"], "muy_fuerte", c.muy_fuerte, "fuerte", c.fuerte, "moderada", c.moderada, c.ligera] as never;
+}
+
 function relleno(paleta: Paleta) {
   const pasos = ESCALA_MM.flatMap((mm, k) => [mm, paleta.escala[k]]);
   return ["interpolate", ["linear"], ["get", "mm"], ...pasos] as never;
@@ -68,6 +88,8 @@ export function MapaLluvia({ estaciones, limites, resumen, paleta, margen, radar
   movilRef.current = esMovil;
   const paletaRef = useRef(paleta);
   paletaRef.current = paleta;
+  const temaRef = useRef(tema);
+  temaRef.current = tema;
   const margenRef = useRef(margen);
   margenRef.current = margen;
   const padding = (movil: boolean) => margenRef.current[movil ? "movil" : "escritorio"];
@@ -109,11 +131,24 @@ export function MapaLluvia({ estaciones, limites, resumen, paleta, margen, radar
       mapa.addSource("enlaces", { type: "geojson", data: vacio });
       mapa.addSource("anillos", { type: "geojson", data: vacio });
       mapa.addSource("ruta", { type: "geojson", data: vacio });
+      mapa.addSource("zonas-lluvia", { type: "geojson", data: vacio });
       mapa.addLayer({ id: "loc-fill", type: "fill", source: "localidades", paint: { "fill-color": relleno(paletaRef.current), "fill-opacity": 1 } });
       mapa.addLayer({
         id: "loc-brillo", type: "line", source: "localidades",
         filter: ["==", ["get", "lloviendo"], true],
         paint: { "line-color": paletaRef.current.brillo, "line-width": 5, "line-blur": 6, "line-opacity": 0.7 },
+      });
+      // La zona de lluvia alrededor de cada estación: un halo de color que se difumina hacia afuera.
+      mapa.addLayer({
+        id: "zonas-lluvia", type: "circle", source: "zonas-lluvia",
+        paint: {
+          "circle-color": colorZona(temaRef.current),
+          "circle-radius": ["interpolate", ["exponential", 2], ["zoom"],
+            8, ["*", ["get", "radio"], PX_POR_METRO_Z8], 16, ["*", ["get", "radio"], PX_POR_METRO_Z16]],
+          "circle-blur": 0.7,
+          "circle-opacity": opacidadZona(0.6),
+          "circle-pitch-alignment": "map",
+        },
       });
       mapa.addLayer({ id: "loc-borde", type: "line", source: "localidades", paint: { "line-color": paletaRef.current.borde, "line-width": 1 } });
       mapa.addLayer({
@@ -161,6 +196,25 @@ export function MapaLluvia({ estaciones, limites, resumen, paleta, margen, radar
     mapaRef.current?.fitBounds(ZONA_URBANA, { padding: padding(esMovil), duration: 600 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [esMovil, margen]);
+
+  // --- Zonas de lluvia: un halo alrededor de cada estación que registra lluvia ---
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapa || !listo) return;
+    const fuente = mapa.getSource("zonas-lluvia") as GeoJSONSource | undefined;
+    fuente?.setData({
+      type: "FeatureCollection",
+      features: estaciones
+        .filter((e) => e.lloviendo)
+        .map((e) => ({
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [e.longitud, e.latitud] },
+          properties: { intensidad: e.intensidad, radio: RADIO_ZONA_M[e.intensidad as keyof typeof RADIO_ZONA_M] ?? RADIO_ZONA_M.ligera },
+        })),
+    });
+    mapa.setPaintProperty("zonas-lluvia", "circle-color", colorZona(tema));
+    mapa.setPaintProperty("zonas-lluvia", "circle-opacity", opacidadZona(tema === "claro" ? 0.7 : 0.6));
+  }, [estaciones, listo, tema]);
 
   // --- Colores según el diseño y el tema ---
   useEffect(() => {
