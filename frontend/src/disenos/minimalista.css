@@ -1,0 +1,335 @@
+/* ───────────── Diseño «Minimalista» ─────────────
+   Casi sin adornos: el mapa, una frase y una barra de búsqueda. Lo demás aparece solo cuando lo pides. */
+
+:root,
+:root[data-tema="claro"] {
+  color-scheme: light;
+  --bg: #f6f5f1;
+  --superficie: #ffffff;
+  --ink: #16181d;
+  --muted: #868b95;
+  --linea: rgba(22, 24, 29, 0.12);
+  --linea-fuerte: rgba(22, 24, 29, 0.28);
+  --acento: #0057ff;
+  --acento-suave: rgba(0, 87, 255, 0.09);
+  --on-acento: #ffffff;
+  --naranja: #ff6a00;
+  --rojo: #e11d48;
+  --sombra: 0 6px 28px rgba(22, 24, 29, 0.1), 0 1px 3px rgba(22, 24, 29, 0.06);
+}
+
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+  --bg: #0e0f12;
+  --superficie: #181a1f;
+  --ink: #f2f2ee;
+  --muted: #8c919b;
+  --linea: rgba(242, 242, 238, 0.12);
+  --linea-fuerte: rgba(242, 242, 238, 0.3);
+  --acento: #4da3ff;
+  --acento-suave: rgba(77, 163, 255, 0.14);
+  --on-acento: #06101f;
+  --naranja: #ff8a3d;
+  --rojo: #ff5577;
+  --sombra: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+:root {
+  --f-ui: "Figtree", system-ui, sans-serif;
+  --f-mono: "Figtree", system-ui, sans-serif;
+  --ancho-panel: 0px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-ui);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+ol, ul { list-style: none; margin: 0; padding: 0; }
+p, h1, dl, dd { margin: 0; }
+:focus-visible { outline: 2px solid var(--acento); outline-offset: 3px; }
+
+/* ───────────── Mapa ───────────── */
+
+.mapa { position: fixed; inset: 0; background: var(--bg); }
+.mapa .maplibregl-canvas { outline: none; }
+
+.maplibregl-ctrl-group {
+  background: var(--superficie) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--sombra) !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button + button { border-top: 1px solid var(--linea) !important; }
+:root[data-tema="oscuro"] .maplibregl-ctrl-icon { filter: invert(1); }
+.maplibregl-ctrl-bottom-left { display: none; }
+
+.lbl {
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); opacity: 0.85; pointer-events: none; white-space: nowrap;
+  text-shadow: 0 0 6px var(--bg), 0 0 3px var(--bg);
+}
+.lbl--on { color: var(--acento); opacity: 1; }
+.mapa:not(.z-hi) .lbl--small { display: none; }
+
+/* Estaciones: puntos diminutos y nítidos; la lluvia, un punto de color con una onda */
+.st {
+  position: absolute; /* MapLibre lo necesita: no cambiar */
+  width: 0; height: 0; padding: 0; border: 0; background: none;
+  --r: 26px;
+  --d: 2.6s;
+  --senal: var(--acento);
+}
+.st::after { content: ""; position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; }
+.st__dot {
+  position: absolute; left: -2.5px; top: -2.5px; width: 5px; height: 5px;
+  border-radius: 50%; background: var(--ink);
+  box-shadow: 0 0 0 1.5px var(--bg);
+  transition: transform 0.15s;
+}
+.st:hover .st__dot { transform: scale(2); }
+.st__ring { display: none; }
+
+.st--on[data-intensidad="fuerte"] { --senal: var(--naranja); }
+.st--on[data-intensidad="muy_fuerte"] { --senal: var(--rojo); }
+.st--on .st__dot {
+  left: -5px; top: -5px; width: 10px; height: 10px;
+  background: var(--senal); box-shadow: 0 0 0 2px var(--bg);
+}
+.st--on .st__ring {
+  display: block; position: absolute;
+  left: calc(var(--r) / -2); top: calc(var(--r) / -2); width: var(--r); height: var(--r);
+  border-radius: 50%; border: 1.5px solid var(--senal); opacity: 0;
+  animation: onda var(--d) cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+.st--on .st__ring--2 { animation-delay: calc(var(--d) / -2); }
+.st--stale .st__dot { opacity: 0.3; }
+.st--sel .st__dot { outline: 1.5px solid var(--ink); outline-offset: 4px; }
+
+@keyframes onda {
+  0%   { transform: scale(0.12); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Destino: un punto grande con una onda */
+.destino { position: absolute; width: 0; height: 0; pointer-events: none; }
+.destino__cruz::before {
+  content: ""; position: absolute; left: -7px; top: -7px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 4px var(--bg);
+}
+.destino__ping { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border: 1.5px solid var(--ink); border-radius: 50%; animation: onda 2.2s ease-out infinite; }
+.destino--lluvia .destino__cruz::before { background: var(--acento); }
+.destino--lluvia .destino__ping { border-color: var(--acento); }
+
+/* ───────────── Barra superior: marca discreta y botones de icono ───────────── */
+
+.barra {
+  position: fixed; top: 16px; left: 20px; right: 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  pointer-events: none; z-index: 5;
+}
+.barra > * { pointer-events: auto; }
+
+.marca {
+  display: flex; align-items: center; gap: 8px; margin: 0; padding: 0;
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1;
+}
+.marca em { font-style: normal; font-weight: 400; color: var(--muted); }
+.marca svg { width: 20px; height: 20px; }
+.marca svg circle { fill: none; stroke: var(--acento); stroke-width: 2; }
+.marca__nucleo { fill: var(--acento) !important; stroke: none !important; }
+.marca__anillo { stroke-opacity: 0.55; }
+.marca__anillo--2 { stroke-opacity: 0.25; }
+
+.barra__acciones { display: flex; gap: 8px; }
+.boton {
+  display: inline-grid; place-items: center;
+  width: 38px; height: 38px; padding: 0;
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: 50%;
+  box-shadow: var(--sombra); font-size: 15px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.boton:hover:not(:disabled) { border-color: var(--acento); color: var(--acento); }
+.boton:disabled { opacity: 0.6; cursor: progress; }
+.boton__texto { display: none; }
+.boton__icono { font-size: 15px; line-height: 1; }
+.boton--activo { background: var(--acento); border-color: var(--acento); color: var(--on-acento); }
+.boton--activo:hover:not(:disabled) { color: var(--on-acento); }
+
+.giro { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--linea-fuerte); border-top-color: var(--acento); animation: gira 0.8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+.alerta {
+  position: fixed; top: 64px; left: 20px; right: 20px; max-width: 460px;
+  display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px;
+  background: var(--superficie); border: 1px solid var(--rojo); border-radius: 14px;
+  box-shadow: var(--sombra); font-size: 14px; z-index: 6;
+}
+.alerta button { flex: none; padding: 6px 12px; border: 0; border-radius: 99px; background: var(--rojo); color: #fff; font-size: 13px; font-weight: 500; }
+
+.leyenda-radar {
+  position: fixed; left: 20px; top: 56px; z-index: 3;
+  display: flex; align-items: center; gap: 7px; margin: 0;
+  font-size: 12px; font-weight: 500; color: var(--muted);
+}
+.leyenda-radar i { width: 8px; height: 8px; border-radius: 50%; background: var(--acento); display: inline-block; }
+
+/* ───────────── Panel: una pila centrada abajo (frase, respuesta, búsqueda) ───────────── */
+
+.panel {
+  position: fixed; left: 0; right: 0; bottom: 4px; margin: 0 auto;
+  width: min(648px, 100%);
+  padding: 30px 24px 6px; /* margen interior para que no se recorten las sombras */
+  max-height: calc(100dvh - 120px);
+  display: flex; flex-direction: column; gap: 10px;
+  overflow-y: auto; scrollbar-width: none;
+  pointer-events: none; /* el mapa sigue siendo tocable alrededor */
+  z-index: 4;
+}
+.panel::-webkit-scrollbar { display: none; }
+.panel > * { pointer-events: auto; flex: none; }
+.panel__asa { display: none; }
+
+.etiqueta { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+label.etiqueta { display: none; }
+
+/* La frase del momento, arriba a la izquierda y fuera de la pila */
+.titular {
+  position: fixed; top: 76px; left: 20px; right: 20px; max-width: 640px;
+  pointer-events: none; order: -1;
+}
+.titular__icono { display: none; }
+.titular .etiqueta { display: none; }
+.titular__cifra { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; margin: 0; line-height: 1.12; font-size: 34px; font-weight: 300; letter-spacing: -0.03em; }
+.titular__n { font-size: 34px; font-weight: 600; color: var(--acento); letter-spacing: -0.03em; }
+.titular__de { font-size: 34px; color: var(--muted); font-weight: 300; }
+.titular__texto { display: none; }
+.titular__cifra--seca { display: block; font-size: 34px; font-weight: 300; }
+.titular__cifra--seca br { display: none; }
+.titular__cifra--vacia { color: var(--muted); }
+.titular__n + .titular__de::after { content: " estaciones con lluvia"; }
+.titular .chips { margin-top: 10px; pointer-events: auto; }
+.chip { display: inline-block; padding: 4px 11px; border: 1px solid var(--linea-fuerte); border-radius: 99px; font-size: 13px; font-weight: 500; background: transparent; }
+.chip--lluvia { border-color: transparent; background: var(--acento-suave); color: var(--acento); }
+
+/* La búsqueda: una sola píldora */
+.buscador { order: 2; }
+.buscador__campo {
+  display: flex; align-items: center; gap: 6px; padding: 6px 6px 6px 22px;
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: 99px; box-shadow: var(--sombra);
+  transition: border-color 0.15s;
+}
+.buscador__campo:focus-within { border-color: var(--acento); }
+.buscador input { flex: 1; min-width: 0; padding: 10px 0; background: none; border: 0; outline: none; font-size: 18px; font-weight: 500; }
+.buscador input::placeholder { color: var(--muted); font-weight: 400; }
+.buscador input::-webkit-search-cancel-button { display: none; }
+.buscador__campo button {
+  flex: none; width: 46px; height: 46px; border: 0; border-radius: 50%;
+  background: var(--ink); color: var(--bg); font-size: 20px; display: grid; place-items: center;
+  transition: transform 0.15s;
+}
+.buscador__campo button:disabled { background: var(--linea); color: var(--muted); cursor: default; }
+.buscador__campo button:not(:disabled):hover { transform: translateX(2px); }
+.chips--ejemplos { display: none; }
+
+.error { order: 1; padding: 10px 16px; border-radius: 14px; background: var(--superficie); border: 1px solid var(--rojo); font-size: 14px; }
+
+/* La respuesta: una frase */
+.veredicto, .ficha {
+  order: 1; position: relative; padding: 18px 22px 18px;
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: 22px; box-shadow: var(--sombra);
+  animation: entra 0.3s ease-out;
+}
+@keyframes entra { from { opacity: 0; transform: translateY(8px); } }
+.veredicto--lluvia { border-color: var(--acento); }
+.cerrar { position: absolute; top: 12px; right: 14px; width: 30px; height: 30px; background: none; border: 0; border-radius: 50%; font-size: 22px; line-height: 1; color: var(--muted); }
+.cerrar:hover { background: var(--linea); }
+.veredicto__titulo { font-size: 36px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.05; margin-top: 2px; padding-right: 30px; }
+.veredicto--lluvia .veredicto__titulo { color: var(--acento); font-weight: 500; }
+.veredicto__sub { margin-top: 8px; color: var(--muted); font-size: 15px; }
+.aviso { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.aviso::before { content: "≈ "; color: var(--naranja); font-weight: 600; }
+.cercanas { display: none; }
+
+.ficha__nombre { font-size: 26px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; margin: 2px 30px 12px 0; }
+.ficha__datos { display: grid; grid-template-columns: repeat(4, auto); justify-content: start; gap: 8px 28px; }
+.ficha__datos dt { font-size: 12.5px; color: var(--muted); }
+.ficha__datos dd { font-size: 17px; font-weight: 500; margin-top: 1px; }
+.ficha__datos small { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+/* Localidades: un enlace que despliega la lista cuando lo pides */
+.localidades { order: 3; align-self: center; pointer-events: none; }
+.localidades > * { pointer-events: auto; }
+.localidades > .etiqueta { display: none; }
+.loc-toggle {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+  background: transparent; border: 0; border-radius: 99px;
+  font-size: 14px; font-weight: 500; color: var(--muted);
+}
+.loc-toggle:hover { color: var(--ink); background: var(--linea); }
+.localidades:not([data-abierta="true"]) ol { display: none; }
+.localidades[data-abierta="true"] { align-self: stretch; }
+.localidades[data-abierta="true"] .loc-toggle { display: flex; margin: 0 auto 6px; }
+.localidades ol {
+  display: flex; flex-direction: column; max-height: 38dvh; overflow-y: auto;
+  background: var(--superficie); border: 1px solid var(--linea); border-radius: 22px; box-shadow: var(--sombra); padding: 6px 20px;
+}
+.loc {
+  width: 100%; text-align: left; display: grid; grid-template-columns: 1fr auto; row-gap: 5px; column-gap: 10px;
+  padding: 11px 0; background: none; border: 0; border-top: 1px solid var(--linea);
+}
+.localidades li:first-child .loc { border-top: 0; }
+.loc:hover .loc__nombre { color: var(--acento); }
+.loc__nombre { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; }
+.loc__valor { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.loc--on .loc__valor { color: var(--acento); font-weight: 600; }
+.loc__pulso { width: 7px; height: 7px; border-radius: 50%; background: var(--acento); animation: late 1.5s ease-in-out infinite; }
+@keyframes late { 50% { opacity: 0.25; } }
+.loc__barra { grid-column: 1 / 3; height: 2px; background: var(--linea); }
+.loc__barra > span { display: block; height: 100%; background: var(--ink); opacity: 0.55; transition: width 0.6s ease-out; }
+.loc__barra[data-nivel="alto"] > span, .loc__barra[data-nivel="muy_alto"] > span { background: var(--acento); opacity: 1; }
+
+.pie { order: 4; text-align: center; font-size: 11px; line-height: 1.4; color: var(--muted); opacity: 0.8; padding-top: 2px; }
+.pie p + p { display: none; }
+.pie abbr { text-decoration: none; }
+.loc-toggle, .pie { text-shadow: 0 0 8px var(--bg), 0 0 4px var(--bg), 0 0 2px var(--bg); }
+
+/* ───────────── Celular ───────────── */
+
+@media (max-width: 820px) {
+  .barra { top: 12px; left: 14px; right: 14px; }
+  .alerta { top: 58px; left: 14px; right: 14px; }
+  .leyenda-radar { left: 14px; top: 52px; }
+  .titular { top: 68px; left: 14px; right: 14px; }
+  .titular__cifra, .titular__n, .titular__de, .titular__cifra--seca { font-size: 28px; }
+  .panel { bottom: 0; width: 100%; padding: 26px 10px calc(8px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 180px); }
+  .veredicto__titulo { font-size: 30px; }
+  .buscador input { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .st--on .st__ring { opacity: 0.45; transform: scale(0.7); }
+}
+
+/* Colores de las piezas compartidas (historial, ruta): ver comun.css */
+:root {
+  --h-fondo: var(--superficie); --h-tarjeta: var(--bg); --h-campo: var(--bg);
+  --h-ink: var(--ink); --h-muted: var(--muted); --h-linea: var(--linea);
+  --h-acento: var(--acento); --h-acento2: var(--naranja); --h-on-acento: var(--on-acento);
+  --h-alerta: var(--rojo); --h-radio: 22px; --h-fuente: var(--f-ui);
+}
+
+/* La ruta va justo después del buscador. */
+.ruta { order: 2; }
