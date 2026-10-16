@@ -1,0 +1,22 @@
+# Configuración con credenciales
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Node / front
+node_modules/
+frontend/dist/
+
+# Editor / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Copia del primer diseño del front (para poder volver)
+_respaldo_diseno_v1/
+frontend/_respaldo_diseno_v1/
