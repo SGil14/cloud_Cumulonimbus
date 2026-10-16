@@ -1,0 +1,24 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+
+# Control de versiones y editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Dependencias y compilados que se generan dentro de la imagen
+**/node_modules
+frontend/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+
+# Cosas que la imagen no necesita
+frontend/_respaldo_diseno_v1
+docs
+*.bat
+README.md
