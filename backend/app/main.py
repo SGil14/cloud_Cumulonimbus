@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import destino, health, historial, lluvia, mapa, radar, ruta
+from app.api.routes import atajo, atajo_ruta, destino, health, historial, lluvia, mapa, radar, ruta
 from app.config import RAIZ_PROYECTO, get_settings
 from app.jobs.recolector import crear_recolector
 from app.services.sab_client import SABError
@@ -58,6 +58,8 @@ async def sab_no_disponible(request: Request, exc: SABError):
 app.include_router(health.router)
 app.include_router(lluvia.router)
 app.include_router(destino.router)
+app.include_router(atajo.router)
+app.include_router(atajo_ruta.router)
 app.include_router(mapa.router)
 app.include_router(radar.router)
 app.include_router(historial.router)
