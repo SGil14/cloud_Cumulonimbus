@@ -28,9 +28,8 @@
 16. [Límites que debes conocer](#límites-que-debes-conocer)
 17. [Solución de problemas](#solución-de-problemas)
 18. [Mejoras futuras](#mejoras-futuras)
-19. [Lecciones aprendidas](#lecciones-aprendidas)
-20. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-21. [Enlaces importantes](#enlaces-importantes)
+19. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+20. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -984,33 +983,6 @@ Para no engañarte con lo que muestra la app:
 | ⏳ | «Mi ubicación» como origen en el atajo de ruta |
 | ⏳ | GitHub Actions: integración continua y despliegue automático |
 | ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
-
----
-
-## Lecciones aprendidas
-
-**Sobre la aplicación**
-- **Verificar con datos reales.** Varias correcciones salieron de comparar lo que se veía en pantalla con lo que decían las fuentes (el radar frente a los pluviómetros, las lecturas viejas de una estación).
-- **«Sin dato» no es «seco».** Mostrar la incertidumbre (tramos «sin datos», estaciones sin lectura reciente, ubicación aproximada) evita conclusiones falsas.
-- **Documentar los límites.** Aclarar qué mide cada fuente (el radar ve lluvia en el aire) evita que el usuario malinterprete el mapa.
-
-**Sobre el atajo de iPhone**
-- **Una dirección web no es un texto cualquiera.** Los espacios y el `#` la cortan; hay que codificarlos antes de enviarlos.
-- **Los registros del servidor mostraron la causa.** Ver la petición exacta que llegaba (`GET /api/atajo/ruta?origen=Calle%2020b%20`) fue más rápido que adivinar.
-- **Cada acción de Atajos sirve para algo distinto:** *URL* guarda una dirección, *Obtener contenido de URL* la visita y *Mostrar vista web* la muestra.
-
-**Sobre el trabajo en equipo**
-- **Un archivo compartido lo sube solo su dueño.** Cuando dos personas subieron el mismo archivo terminado por separado, GitHub marcó conflicto aunque el contenido era igual.
-- **Los saltos de línea importan.** La diferencia entre LF (Linux/Mac) y CRLF (Windows) bastó para generar el conflicto; un `.gitattributes` lo evita.
-- **Un Pull Request por persona, con un commit por historia,** permite revisar historia por historia sin multiplicar los PR.
-- **El orden de fusión influye:** conviene fusionar primero quien trae la base y dejar las pruebas para el final.
-
-**Sobre el despliegue**
-- Un antivirus que intercepta HTTPS rompió `git` y Azure CLI; se resolvió usando los certificados de Windows.
-- Azure for Students limita las regiones y bloquea `az acr build`, por eso la imagen se construye en local.
-- El detalle de los problemas del despliegue está en la documentación de `docs/despliegue/`.
-
-> Pendiente: reflexiones personales del equipo sobre cómo fue trabajar con Kanban y en grupo.
 
 ---
 
