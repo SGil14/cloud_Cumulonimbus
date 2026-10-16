@@ -39,11 +39,11 @@ Proyecto del curso **Desarrollo de Aplicaciones en la Nube · Proyecto 2** (gest
 
 | Rol | Integrante | Usuario de GitHub | Responsabilidad |
 |---|---|---|---|
-| **Product Owner** | Sebastian Gil Marin | [@SGil14](https://github.com/SGil14) | Prioriza el backlog, define y valida los criterios de aceptación y acepta cada historia en la columna *Review* antes de pasarla a *Done*. |
-| Desarrollador/a | [Nombre] | [@usuario] | [Áreas en las que trabaja: Frontend / Backend / DevOps / QA] |
-| Desarrollador/a | [Nombre] | [@usuario] | [Áreas en las que trabaja: Frontend / Backend / DevOps / QA] |
+| **Product Owner** | Sebastian Gil Marin | [@SGil14](https://github.com/SGil14) | Prioriza el backlog, define y valida los criterios de aceptación y acepta cada historia en la columna *Review* antes de pasarla a *Done*. Además desarrolla 11 historias (HU-03, 04, 05, 07, 09, 10, 21, 24, 26, 27, 28) y se encarga de la documentación (HU-26). |
+| Desarrollador | [Nombre completo] | [@iancardonag](https://github.com/iancardonag) | Desarrolla 8 historias (HU-02, 06, 08, 14, 17, 18, 23, 25) en backend, frontend y pruebas. |
+| Desarrollador | [Nombre completo] | [@jhonAleVelasco](https://github.com/jhonAleVelasco) | Desarrolla 9 historias (HU-01, 11, 12, 13, 15, 16, 19, 20, 22) en backend, frontend y pruebas. |
 
-> Pendiente: completar los nombres y usuarios de los otros dos integrantes.
+> Pendiente: escribir los nombres completos de @iancardonag y @jhonAleVelasco.
 
 ---
 
@@ -322,15 +322,15 @@ Flujo de trabajo:
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-01](https://github.com/SGil14/cloud_Cumulonimbus/issues/1) | Consultar los pluviómetros del SAB | 5 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-02](https://github.com/SGil14/cloud_Cumulonimbus/issues/2) | Clasificar la lluvia | 2 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-03](https://github.com/SGil14/cloud_Cumulonimbus/issues/3) | Guardar el histórico en PostgreSQL | 5 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-04](https://github.com/SGil14/cloud_Cumulonimbus/issues/4) | Recolector automático cada 5 minutos | 2 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-05](https://github.com/SGil14/cloud_Cumulonimbus/issues/5) | Configuración por variables de entorno | 1 | Media | DevOps | _por asignar_ | Backlog |
-| [HU-13](https://github.com/SGil14/cloud_Cumulonimbus/issues/13) | Consultar por localidad o coordenadas | 2 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-14](https://github.com/SGil14/cloud_Cumulonimbus/issues/14) | Buscar direcciones y esquinas de Bogotá | 8 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-15](https://github.com/SGil14/cloud_Cumulonimbus/issues/15) | Buscar barrios y lugares | 3 | Media | Feature | _por asignar_ | Backlog |
-| [HU-16](https://github.com/SGil14/cloud_Cumulonimbus/issues/16) | Caché de destinos y registro de consultas | 2 | Media | Feature | _por asignar_ | Backlog |
+| [HU-01](https://github.com/SGil14/cloud_Cumulonimbus/issues/1) | Consultar los pluviómetros del SAB | 5 | Alta | Feature | @jhonAleVelasco | Backlog |
+| [HU-02](https://github.com/SGil14/cloud_Cumulonimbus/issues/2) | Clasificar la lluvia | 2 | Alta | Feature | @iancardonag | Backlog |
+| [HU-03](https://github.com/SGil14/cloud_Cumulonimbus/issues/3) | Guardar el histórico en PostgreSQL | 5 | Alta | Feature | @SGil14 | Backlog |
+| [HU-04](https://github.com/SGil14/cloud_Cumulonimbus/issues/4) | Recolector automático cada 5 minutos | 2 | Alta | Feature | @SGil14 | Backlog |
+| [HU-05](https://github.com/SGil14/cloud_Cumulonimbus/issues/5) | Configuración por variables de entorno | 1 | Media | DevOps | @SGil14 | Backlog |
+| [HU-13](https://github.com/SGil14/cloud_Cumulonimbus/issues/13) | Consultar por localidad o coordenadas | 2 | Alta | Feature | @jhonAleVelasco | Backlog |
+| [HU-14](https://github.com/SGil14/cloud_Cumulonimbus/issues/14) | Buscar direcciones y esquinas de Bogotá | 8 | Alta | Feature | @iancardonag | Backlog |
+| [HU-15](https://github.com/SGil14/cloud_Cumulonimbus/issues/15) | Buscar barrios y lugares | 3 | Media | Feature | @jhonAleVelasco | Backlog |
+| [HU-16](https://github.com/SGil14/cloud_Cumulonimbus/issues/16) | Caché de destinos y registro de consultas | 2 | Media | Feature | @jhonAleVelasco | Backlog |
 
 - Evidencias y enlaces: [pendiente]
 
@@ -339,17 +339,17 @@ Flujo de trabajo:
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-06](https://github.com/SGil14/cloud_Cumulonimbus/issues/6) | Ver cuántas estaciones registran lluvia | 3 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-07](https://github.com/SGil14/cloud_Cumulonimbus/issues/7) | Ficha de cada estación | 1 | Media | Feature | _por asignar_ | Backlog |
-| [HU-08](https://github.com/SGil14/cloud_Cumulonimbus/issues/8) | Lluvia acumulada por localidad | 2 | Media | Feature | _por asignar_ | Backlog |
-| [HU-09](https://github.com/SGil14/cloud_Cumulonimbus/issues/9) | Actualizar a demanda | 1 | Media | Feature | _por asignar_ | Backlog |
-| [HU-10](https://github.com/SGil14/cloud_Cumulonimbus/issues/10) | Mapa de Bogotá sin mapa base | 5 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-11](https://github.com/SGil14/cloud_Cumulonimbus/issues/11) | Estaciones coloreadas por intensidad | 2 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-12](https://github.com/SGil14/cloud_Cumulonimbus/issues/12) | Zonas de color alrededor de cada estación | 3 | Media | Feature | _por asignar_ | Backlog |
-| [HU-17](https://github.com/SGil14/cloud_Cumulonimbus/issues/17) | Respuesta «¿llueve cerca?» | 5 | Alta | Feature | _por asignar_ | Backlog |
-| [HU-22](https://github.com/SGil14/cloud_Cumulonimbus/issues/22) | Cinco diseños intercambiables | 8 | Baja | Feature | _por asignar_ | Backlog |
-| [HU-23](https://github.com/SGil14/cloud_Cumulonimbus/issues/23) | Tema claro/oscuro y versión celular | 3 | Media | Feature | _por asignar_ | Backlog |
-| [HU-24](https://github.com/SGil14/cloud_Cumulonimbus/issues/24) | Lluvia animada (Mapa vivo) | 3 | Baja | Feature | _por asignar_ | Backlog |
+| [HU-06](https://github.com/SGil14/cloud_Cumulonimbus/issues/6) | Ver cuántas estaciones registran lluvia | 3 | Alta | Feature | @iancardonag | Backlog |
+| [HU-07](https://github.com/SGil14/cloud_Cumulonimbus/issues/7) | Ficha de cada estación | 1 | Media | Feature | @SGil14 | Backlog |
+| [HU-08](https://github.com/SGil14/cloud_Cumulonimbus/issues/8) | Lluvia acumulada por localidad | 2 | Media | Feature | @iancardonag | Backlog |
+| [HU-09](https://github.com/SGil14/cloud_Cumulonimbus/issues/9) | Actualizar a demanda | 1 | Media | Feature | @SGil14 | Backlog |
+| [HU-10](https://github.com/SGil14/cloud_Cumulonimbus/issues/10) | Mapa de Bogotá sin mapa base | 5 | Alta | Feature | @SGil14 | Backlog |
+| [HU-11](https://github.com/SGil14/cloud_Cumulonimbus/issues/11) | Estaciones coloreadas por intensidad | 2 | Alta | Feature | @jhonAleVelasco | Backlog |
+| [HU-12](https://github.com/SGil14/cloud_Cumulonimbus/issues/12) | Zonas de color alrededor de cada estación | 3 | Media | Feature | @jhonAleVelasco | Backlog |
+| [HU-17](https://github.com/SGil14/cloud_Cumulonimbus/issues/17) | Respuesta «¿llueve cerca?» | 5 | Alta | Feature | @iancardonag | Backlog |
+| [HU-22](https://github.com/SGil14/cloud_Cumulonimbus/issues/22) | Cinco diseños intercambiables | 8 | Baja | Feature | @jhonAleVelasco | Backlog |
+| [HU-23](https://github.com/SGil14/cloud_Cumulonimbus/issues/23) | Tema claro/oscuro y versión celular | 3 | Media | Feature | @iancardonag | Backlog |
+| [HU-24](https://github.com/SGil14/cloud_Cumulonimbus/issues/24) | Lluvia animada (Mapa vivo) | 3 | Baja | Feature | @SGil14 | Backlog |
 
 - Evidencias y enlaces: [pendiente]
 
@@ -358,14 +358,14 @@ Flujo de trabajo:
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-18](https://github.com/SGil14/cloud_Cumulonimbus/issues/18) | Revisar la lluvia en una ruta | 8 | Media | Feature | _por asignar_ | Backlog |
-| [HU-19](https://github.com/SGil14/cloud_Cumulonimbus/issues/19) | Gráfico de lluvia por hora y por día | 8 | Media | Feature | _por asignar_ | Backlog |
-| [HU-20](https://github.com/SGil14/cloud_Cumulonimbus/issues/20) | Ranking de localidades más lluviosas | 2 | Baja | Feature | _por asignar_ | Backlog |
-| [HU-21](https://github.com/SGil14/cloud_Cumulonimbus/issues/21) | Capa del radar meteorológico | 8 | Media | Feature | _por asignar_ | Backlog |
-| [HU-25](https://github.com/SGil14/cloud_Cumulonimbus/issues/25) | Pruebas automáticas del backend | 5 | Media | Testing | _por asignar_ | Backlog |
-| [HU-26](https://github.com/SGil14/cloud_Cumulonimbus/issues/26) | Documentación del proyecto | 3 | Alta | Documentation | _por asignar_ | Backlog |
-| [HU-27](https://github.com/SGil14/cloud_Cumulonimbus/issues/27) | Docker | 3 | Alta | DevOps | _por asignar_ | Backlog |
-| [HU-28](https://github.com/SGil14/cloud_Cumulonimbus/issues/28) | Repositorio y nombre del proyecto | 1 | Media | DevOps | _por asignar_ | Backlog |
+| [HU-18](https://github.com/SGil14/cloud_Cumulonimbus/issues/18) | Revisar la lluvia en una ruta | 8 | Media | Feature | @iancardonag | Backlog |
+| [HU-19](https://github.com/SGil14/cloud_Cumulonimbus/issues/19) | Gráfico de lluvia por hora y por día | 8 | Media | Feature | @jhonAleVelasco | Backlog |
+| [HU-20](https://github.com/SGil14/cloud_Cumulonimbus/issues/20) | Ranking de localidades más lluviosas | 2 | Baja | Feature | @jhonAleVelasco | Backlog |
+| [HU-21](https://github.com/SGil14/cloud_Cumulonimbus/issues/21) | Capa del radar meteorológico | 8 | Media | Feature | @SGil14 | Backlog |
+| [HU-25](https://github.com/SGil14/cloud_Cumulonimbus/issues/25) | Pruebas automáticas del backend | 5 | Media | Testing | @iancardonag | Backlog |
+| [HU-26](https://github.com/SGil14/cloud_Cumulonimbus/issues/26) | Documentación del proyecto | 3 | Alta | Documentation | @SGil14 | Backlog |
+| [HU-27](https://github.com/SGil14/cloud_Cumulonimbus/issues/27) | Docker | 3 | Alta | DevOps | @SGil14 | Backlog |
+| [HU-28](https://github.com/SGil14/cloud_Cumulonimbus/issues/28) | Repositorio y nombre del proyecto | 1 | Media | DevOps | @SGil14 | Backlog |
 
 - Evidencias y enlaces: [pendiente]
 
