@@ -20,9 +20,11 @@ from sqlalchemy.orm import Session
 from app.core.tiempo import BOGOTA_TZ, ahora_bogota
 from app.models.historial import (
     HistorialDestino,
+    ItemRanking,
     Paso,
     Periodo,
     PuntoHistorial,
+    RankingHistorial,
     SerieEstacion,
     SerieHistorial,
 )
@@ -132,6 +134,42 @@ def agregar_serie(
     )
 
 
+def agregar_ranking(filas: list[Fila], v: Ventana, datos_desde: datetime | None) -> RankingHistorial:
+    """Total de lluvia por localidad: promedio entre sus estaciones del total de cada estación."""
+    total_estacion: dict[int, float] = defaultdict(float)
+    localidad_de: dict[int, str] = {}
+    intervalos_con_datos: set[datetime] = set()
+    for inicio, id_sensor, loc, mm, _n in filas:
+        total_estacion[id_sensor] += float(mm)
+        localidad_de[id_sensor] = loc
+        intervalos_con_datos.add(_a_local(inicio))
+
+    por_localidad: dict[str, list[float]] = defaultdict(list)
+    for id_sensor, total in total_estacion.items():
+        por_localidad[localidad_de[id_sensor]].append(total)
+
+    items = [
+        ItemRanking(
+            localidad=loc,
+            total_mm=round(sum(v_) / len(v_), 2),
+            max_estacion_mm=round(max(v_), 2),
+            estaciones=len(v_),
+        )
+        for loc, v_ in por_localidad.items()
+    ]
+    items.sort(key=lambda i: (-i.total_mm, i.localidad))
+    con_datos = sum(1 for i in v.intervalos if i in intervalos_con_datos)
+    return RankingHistorial(
+        periodo=v.periodo,
+        paso=v.paso,
+        desde=v.intervalos[0],
+        hasta=v.hasta,
+        datos_desde=datos_desde,
+        cobertura_pct=round(100 * con_datos / len(v.intervalos)),
+        items=items,
+    )
+
+
 # ---------- Acceso a datos ----------
 
 def _datos_desde(db: Session) -> datetime | None:
@@ -162,6 +200,11 @@ def _filas(db: Session, v: Ventana, *, localidad: str | None = None, sensores: l
 def serie(db: Session, periodo: Periodo, localidad: str | None = None) -> SerieHistorial:
     v = ventana(periodo, ahora_bogota())
     return agregar_serie(_filas(db, v, localidad=localidad), v, localidad or "Toda Bogotá", _datos_desde(db))
+
+
+def ranking(db: Session, periodo: Periodo) -> RankingHistorial:
+    v = ventana(periodo, ahora_bogota())
+    return agregar_ranking(_filas(db, v), v, _datos_desde(db))
 
 
 def destino(db: Session, periodo: Periodo, lat: float, lon: float, cantidad: int = 3) -> HistorialDestino:

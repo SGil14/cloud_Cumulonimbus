@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models.historial import HistorialDestino, Periodo, SerieHistorial
+from app.models.historial import HistorialDestino, Periodo, RankingHistorial, SerieHistorial
 from app.services import historial_service
 
 router = APIRouter(prefix="/api/historial", tags=["historial"])
@@ -20,6 +20,12 @@ def serie(
 ):
     """Cuánto llovió en cada intervalo, para toda Bogotá o para una localidad."""
     return historial_service.serie(db, periodo, localidad)
+
+
+@router.get("/ranking", response_model=RankingHistorial)
+def ranking(periodo: Periodo = PERIODO, db: Session = Depends(get_db)):
+    """Localidades ordenadas por lo que llovió en el periodo."""
+    return historial_service.ranking(db, periodo)
 
 
 @router.get("/destino", response_model=HistorialDestino)

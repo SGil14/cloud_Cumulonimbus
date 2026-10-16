@@ -41,7 +41,7 @@ export function Historial({ localidades, destino, abrirEnDestino, onCerrar }: Pr
     abrirEnDestino && coords ? { tipo: "destino", lat: coords.latitud, lon: coords.longitud } : { tipo: "bogota" },
   );
   const [estacionElegida, setEstacionElegida] = useState(0);
-  const { serie, destino: porDestino, cargando, error } = useHistorial(periodo, alcance, true);
+  const { serie, ranking, destino: porDestino, cargando, error } = useHistorial(periodo, alcance, true);
   const botonCerrar = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -66,6 +66,7 @@ export function Historial({ localidades, destino, abrirEnDestino, onCerrar }: Pr
   const estacion = porDestino?.estaciones[Math.min(estacionElegida, (porDestino?.estaciones.length ?? 1) - 1)];
   const serieActual = alcance.tipo === "destino" ? estacion?.serie : serie;
   const tituloPeriodo = PERIODOS.find((p) => p.id === periodo)?.titulo ?? "";
+  const maxRanking = Math.max(0.01, ...(ranking?.items.map((i) => i.total_mm) ?? [0]));
 
   return (
     <div className="hist-fondo" onClick={onCerrar}>
@@ -151,6 +152,22 @@ export function Historial({ localidades, destino, abrirEnDestino, onCerrar }: Pr
           <p className="hist__vacio">No encontré estaciones cerca de ese destino.</p>
         )}
 
+        {alcance.tipo !== "destino" && ranking && ranking.items.length > 0 && (
+          <section className="hist__ranking" aria-label={`Localidades más lluviosas, ${tituloPeriodo}`}>
+            <p className="hist__subtitulo">Localidades más lluviosas · {tituloPeriodo}</p>
+            <ol>
+              {ranking.items.map((i) => (
+                <li key={i.localidad}>
+                  <button type="button" onClick={() => cambiarAlcance(`l:${i.localidad}`)} className="hist__fila">
+                    <span className="hist__fila-nombre">{nombreLocalidad(i.localidad)}</span>
+                    <span className="hist__fila-valor">{mm(i.total_mm)} mm</span>
+                    <span className="hist__fila-barra"><span style={{ width: `${(i.total_mm / maxRanking) * 100}%` }} /></span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </section>
     </div>
   );
