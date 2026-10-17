@@ -4,7 +4,7 @@
 
 ![Cumulonimbus con el diseño Clima, tema claro](docs/img/01-diseno-clima-claro.png)
 
-> **Sobre las capturas de este documento.** Cuando se tomaron las capturas casi no llovía en Bogotá, así que las imágenes que muestran lluvia (zonas de color, radar encendido, el panel «7 de 71») usan **estaciones y ecos de radar simulados** para poder enseñar cómo se ve. Las imágenes del buscador, la ruta, el historial y la documentación de la API usan **datos reales** del momento de la captura.
+> **Sobre las capturas de este documento.** Cuando se tomaron las capturas casi no llovía en Bogotá, así que las imágenes que muestran lluvia (zonas de color, radar encendido, el panel «7 de 71») usan **estaciones y ecos de radar simulados** para poder enseñar cómo se ve. Las imágenes del buscador, la ruta, el historial y la documentación de la API usan **datos reales** del momento de la captura. Las capturas del atajo de iPhone son de un **teléfono real**.
 
 ---
 
@@ -24,13 +24,12 @@
 12. [Los cinco diseños](#los-cinco-diseños)
 13. [Estructura del proyecto](#estructura-del-proyecto)
 14. [Pruebas](#pruebas)
-15. [Despliegue en la nube](#despliegue-en-la-nube)
+15. [Despliegue en Azure](#despliegue-en-azure)
 16. [Límites que debes conocer](#límites-que-debes-conocer)
 17. [Solución de problemas](#solución-de-problemas)
 18. [Mejoras futuras](#mejoras-futuras)
-19. [Lecciones aprendidas](#lecciones-aprendidas)
-20. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-21. [Enlaces importantes](#enlaces-importantes)
+19. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+20. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -42,9 +41,9 @@ Proyecto del curso **Desarrollo de Aplicaciones en la Nube · Proyecto 2** (gest
 |---|---|---|---|
 | **Product Owner** | Sebastian Gil Marin | [@SGil14](https://github.com/SGil14) | Prioriza el backlog, define y valida los criterios de aceptación y acepta cada historia en la columna *Review* antes de pasarla a *Done*. Además desarrolla 11 historias (HU-03, 04, 05, 07, 09, 10, 21, 24, 26, 27, 28) y se encarga de la documentación (HU-26). |
 | Desarrollador | [Nombre completo] | [@iancardonag](https://github.com/iancardonag) | Desarrolla 8 historias (HU-02, 06, 08, 14, 17, 18, 23, 25) en backend, frontend y pruebas. |
-| Desarrollador | [Nombre completo] | [@jhonAleVelasco](https://github.com/jhonAleVelasco) | Desarrolla 9 historias (HU-01, 11, 12, 13, 15, 16, 19, 20, 22) en backend, frontend y pruebas. |
+| Desarrollador y responsable del despliegue | Jhon Alejandro Velasco García | [@jhonAleVelasco](https://github.com/jhonAleVelasco) | Desarrolla 9 historias (HU-01, 11, 12, 13, 15, 16, 19, 20, 22) y se encarga del **despliegue en Azure** (ver «Despliegue en Azure»). |
 
-> Pendiente: escribir los nombres completos de @iancardonag y @jhonAleVelasco.
+> Pendiente: escribir el nombre completo de @iancardonag.
 
 ---
 
@@ -316,59 +315,59 @@ Flujo de trabajo:
 
 ## Sprints
 
-> Plan de trabajo. El estado de cada historia se actualiza en el [tablero](https://github.com/users/SGil14/projects/2) a medida que el equipo las termina; las evidencias y enlaces de cada sprint se agregan aquí al cerrarlo.
+> Las 28 historias están **fusionadas en `main`** mediante tres Pull Requests, uno por integrante ([#42](https://github.com/SGil14/cloud_Cumulonimbus/pull/42), [#43](https://github.com/SGil14/cloud_Cumulonimbus/pull/43) y [#44](https://github.com/SGil14/cloud_Cumulonimbus/pull/44)), con un commit por historia. El detalle de cada historia, con sus criterios de aceptación, está en el [tablero](https://github.com/users/SGil14/projects/2).
 
 ### Sprint 1 · Backend y base de datos
 **Objetivo:** leer los pluviómetros del SAB, clasificar la lluvia, guardar el histórico y resolver destinos. **9 historias · 30 puntos.**
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-01](https://github.com/SGil14/cloud_Cumulonimbus/issues/1) | Consultar los pluviómetros del SAB | 5 | Alta | Feature | @jhonAleVelasco | Backlog |
-| [HU-02](https://github.com/SGil14/cloud_Cumulonimbus/issues/2) | Clasificar la lluvia | 2 | Alta | Feature | @iancardonag | Backlog |
-| [HU-03](https://github.com/SGil14/cloud_Cumulonimbus/issues/3) | Guardar el histórico en PostgreSQL | 5 | Alta | Feature | @SGil14 | Backlog |
-| [HU-04](https://github.com/SGil14/cloud_Cumulonimbus/issues/4) | Recolector automático cada 5 minutos | 2 | Alta | Feature | @SGil14 | Backlog |
-| [HU-05](https://github.com/SGil14/cloud_Cumulonimbus/issues/5) | Configuración por variables de entorno | 1 | Media | DevOps | @SGil14 | Backlog |
-| [HU-13](https://github.com/SGil14/cloud_Cumulonimbus/issues/13) | Consultar por localidad o coordenadas | 2 | Alta | Feature | @jhonAleVelasco | Backlog |
-| [HU-14](https://github.com/SGil14/cloud_Cumulonimbus/issues/14) | Buscar direcciones y esquinas de Bogotá | 8 | Alta | Feature | @iancardonag | Backlog |
-| [HU-15](https://github.com/SGil14/cloud_Cumulonimbus/issues/15) | Buscar barrios y lugares | 3 | Media | Feature | @jhonAleVelasco | Backlog |
-| [HU-16](https://github.com/SGil14/cloud_Cumulonimbus/issues/16) | Caché de destinos y registro de consultas | 2 | Media | Feature | @jhonAleVelasco | Backlog |
+| [HU-01](https://github.com/SGil14/cloud_Cumulonimbus/issues/1) | Consultar los pluviómetros del SAB | 5 | Alta | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-02](https://github.com/SGil14/cloud_Cumulonimbus/issues/2) | Clasificar la lluvia | 2 | Alta | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-03](https://github.com/SGil14/cloud_Cumulonimbus/issues/3) | Guardar el histórico en PostgreSQL | 5 | Alta | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-04](https://github.com/SGil14/cloud_Cumulonimbus/issues/4) | Recolector automático cada 5 minutos | 2 | Alta | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-05](https://github.com/SGil14/cloud_Cumulonimbus/issues/5) | Configuración por variables de entorno | 1 | Media | DevOps | @SGil14 | Hecho · PR #42 |
+| [HU-13](https://github.com/SGil14/cloud_Cumulonimbus/issues/13) | Consultar por localidad o coordenadas | 2 | Alta | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-14](https://github.com/SGil14/cloud_Cumulonimbus/issues/14) | Buscar direcciones y esquinas de Bogotá | 8 | Alta | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-15](https://github.com/SGil14/cloud_Cumulonimbus/issues/15) | Buscar barrios y lugares | 3 | Media | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-16](https://github.com/SGil14/cloud_Cumulonimbus/issues/16) | Caché de destinos y registro de consultas | 2 | Media | Feature | @jhonAleVelasco | Hecho · PR #43 |
 
-- Evidencias y enlaces: [pendiente]
+- Evidencias: commits `HU-xx` de cada Pull Request y los issues cerrados en el tablero.
 
 ### Sprint 2 · Frontend
 **Objetivo:** mapa, panel de resultados, estaciones, buscador y experiencia visual. **11 historias · 36 puntos.**
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-06](https://github.com/SGil14/cloud_Cumulonimbus/issues/6) | Ver cuántas estaciones registran lluvia | 3 | Alta | Feature | @iancardonag | Backlog |
-| [HU-07](https://github.com/SGil14/cloud_Cumulonimbus/issues/7) | Ficha de cada estación | 1 | Media | Feature | @SGil14 | Backlog |
-| [HU-08](https://github.com/SGil14/cloud_Cumulonimbus/issues/8) | Lluvia acumulada por localidad | 2 | Media | Feature | @iancardonag | Backlog |
-| [HU-09](https://github.com/SGil14/cloud_Cumulonimbus/issues/9) | Actualizar a demanda | 1 | Media | Feature | @SGil14 | Backlog |
-| [HU-10](https://github.com/SGil14/cloud_Cumulonimbus/issues/10) | Mapa de Bogotá sin mapa base | 5 | Alta | Feature | @SGil14 | Backlog |
-| [HU-11](https://github.com/SGil14/cloud_Cumulonimbus/issues/11) | Estaciones coloreadas por intensidad | 2 | Alta | Feature | @jhonAleVelasco | Backlog |
-| [HU-12](https://github.com/SGil14/cloud_Cumulonimbus/issues/12) | Zonas de color alrededor de cada estación | 3 | Media | Feature | @jhonAleVelasco | Backlog |
-| [HU-17](https://github.com/SGil14/cloud_Cumulonimbus/issues/17) | Respuesta «¿llueve cerca?» | 5 | Alta | Feature | @iancardonag | Backlog |
-| [HU-22](https://github.com/SGil14/cloud_Cumulonimbus/issues/22) | Cinco diseños intercambiables | 8 | Baja | Feature | @jhonAleVelasco | Backlog |
-| [HU-23](https://github.com/SGil14/cloud_Cumulonimbus/issues/23) | Tema claro/oscuro y versión celular | 3 | Media | Feature | @iancardonag | Backlog |
-| [HU-24](https://github.com/SGil14/cloud_Cumulonimbus/issues/24) | Lluvia animada (Mapa vivo) | 3 | Baja | Feature | @SGil14 | Backlog |
+| [HU-06](https://github.com/SGil14/cloud_Cumulonimbus/issues/6) | Ver cuántas estaciones registran lluvia | 3 | Alta | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-07](https://github.com/SGil14/cloud_Cumulonimbus/issues/7) | Ficha de cada estación | 1 | Media | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-08](https://github.com/SGil14/cloud_Cumulonimbus/issues/8) | Lluvia acumulada por localidad | 2 | Media | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-09](https://github.com/SGil14/cloud_Cumulonimbus/issues/9) | Actualizar a demanda | 1 | Media | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-10](https://github.com/SGil14/cloud_Cumulonimbus/issues/10) | Mapa de Bogotá sin mapa base | 5 | Alta | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-11](https://github.com/SGil14/cloud_Cumulonimbus/issues/11) | Estaciones coloreadas por intensidad | 2 | Alta | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-12](https://github.com/SGil14/cloud_Cumulonimbus/issues/12) | Zonas de color alrededor de cada estación | 3 | Media | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-17](https://github.com/SGil14/cloud_Cumulonimbus/issues/17) | Respuesta «¿llueve cerca?» | 5 | Alta | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-22](https://github.com/SGil14/cloud_Cumulonimbus/issues/22) | Cinco diseños intercambiables | 8 | Baja | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-23](https://github.com/SGil14/cloud_Cumulonimbus/issues/23) | Tema claro/oscuro y versión celular | 3 | Media | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-24](https://github.com/SGil14/cloud_Cumulonimbus/issues/24) | Lluvia animada (Mapa vivo) | 3 | Baja | Feature | @SGil14 | Hecho · PR #42 |
 
-- Evidencias y enlaces: [pendiente]
+- Evidencias: commits `HU-xx` de cada Pull Request y los issues cerrados en el tablero.
 
 ### Sprint 3 · Funciones avanzadas, calidad y despliegue
 **Objetivo:** ruta, historial y radar, pruebas, documentación, Docker y despliegue en la nube. **8 historias · 38 puntos.**
 
 | Historia | Título | Puntos | Prioridad | Tipo | Responsable | Estado |
 |---|---|---|---|---|---|---|
-| [HU-18](https://github.com/SGil14/cloud_Cumulonimbus/issues/18) | Revisar la lluvia en una ruta | 8 | Media | Feature | @iancardonag | Backlog |
-| [HU-19](https://github.com/SGil14/cloud_Cumulonimbus/issues/19) | Gráfico de lluvia por hora y por día | 8 | Media | Feature | @jhonAleVelasco | Backlog |
-| [HU-20](https://github.com/SGil14/cloud_Cumulonimbus/issues/20) | Ranking de localidades más lluviosas | 2 | Baja | Feature | @jhonAleVelasco | Backlog |
-| [HU-21](https://github.com/SGil14/cloud_Cumulonimbus/issues/21) | Capa del radar meteorológico | 8 | Media | Feature | @SGil14 | Backlog |
-| [HU-25](https://github.com/SGil14/cloud_Cumulonimbus/issues/25) | Pruebas automáticas del backend | 5 | Media | Testing | @iancardonag | Backlog |
-| [HU-26](https://github.com/SGil14/cloud_Cumulonimbus/issues/26) | Documentación del proyecto | 3 | Alta | Documentation | @SGil14 | Backlog |
-| [HU-27](https://github.com/SGil14/cloud_Cumulonimbus/issues/27) | Docker | 3 | Alta | DevOps | @SGil14 | Backlog |
-| [HU-28](https://github.com/SGil14/cloud_Cumulonimbus/issues/28) | Repositorio y nombre del proyecto | 1 | Media | DevOps | @SGil14 | Backlog |
+| [HU-18](https://github.com/SGil14/cloud_Cumulonimbus/issues/18) | Revisar la lluvia en una ruta | 8 | Media | Feature | @iancardonag | Hecho · PR #44 |
+| [HU-19](https://github.com/SGil14/cloud_Cumulonimbus/issues/19) | Gráfico de lluvia por hora y por día | 8 | Media | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-20](https://github.com/SGil14/cloud_Cumulonimbus/issues/20) | Ranking de localidades más lluviosas | 2 | Baja | Feature | @jhonAleVelasco | Hecho · PR #43 |
+| [HU-21](https://github.com/SGil14/cloud_Cumulonimbus/issues/21) | Capa del radar meteorológico | 8 | Media | Feature | @SGil14 | Hecho · PR #42 |
+| [HU-25](https://github.com/SGil14/cloud_Cumulonimbus/issues/25) | Pruebas automáticas del backend | 5 | Media | Testing | @iancardonag | Hecho · PR #44 |
+| [HU-26](https://github.com/SGil14/cloud_Cumulonimbus/issues/26) | Documentación del proyecto | 3 | Alta | Documentation | @SGil14 | Hecho · PR #42 |
+| [HU-27](https://github.com/SGil14/cloud_Cumulonimbus/issues/27) | Docker | 3 | Alta | DevOps | @SGil14 | Hecho · PR #42 |
+| [HU-28](https://github.com/SGil14/cloud_Cumulonimbus/issues/28) | Repositorio y nombre del proyecto | 1 | Media | DevOps | @SGil14 | Hecho · PR #42 |
 
-- Evidencias y enlaces: [pendiente]
+- Evidencias: commits `HU-xx` de cada Pull Request y los issues cerrados en el tablero.
 
 ---
 
@@ -378,7 +377,7 @@ Las métricas se calculan a partir del tablero (GitHub Projects → *Insights*) 
 
 | Métrica | Cómo se mide | Resultado |
 |---|---|---|
-| **Velocity** | Puntos completados por sprint (campo *Estimación*) | Planeado: Sprint 1 = 30, Sprint 2 = 36, Sprint 3 = 38 (total 104). Real: [pendiente] |
+| **Velocity** | Puntos completados por sprint (campo *Estimación*) | Planeado: Sprint 1 = 30, Sprint 2 = 36, Sprint 3 = 38 (total 104). Entregados: 30, 36 y 38 puntos (**104 de 104**). Sin fechas de sprint no se calcula la velocidad por tiempo. |
 | **Burndown** | Puntos restantes frente al tiempo del sprint | [pendiente] |
 | **Lead time** | Tiempo desde *Backlog* hasta *Done* | [pendiente] |
 | **Cycle time** | Tiempo desde *In Progress* hasta *Done* | [pendiente] |
@@ -386,8 +385,8 @@ Las métricas se calculan a partir del tablero (GitHub Projects → *Insights*) 
 
 ### Resumen del proyecto
 
-- **Historias completadas:** [X] / 28
-- **Velocity promedio:** [X] puntos por sprint
+- **Historias completadas:** 28 / 28 (fusionadas en `main`)
+- **Velocity promedio:** 34,7 puntos por sprint (104 puntos entre 3 sprints)
 - **Bugs encontrados:** 13 (documentados como issues cerrados, BUG-01 a BUG-13)
 - **Tiempo promedio de resolución:** [pendiente]
 
@@ -535,7 +534,7 @@ Qué hace por ti:
 - La base de datos no se publica fuera de Docker; solo se expone el puerto 8000 de la app.
 - La imagen no lleva tu `.env` ni la carpeta de respaldo (ver `.dockerignore`) y no corre como administrador.
 
-> **Estado:** los archivos Docker se escribieron sin poder construir la imagen en el equipo de desarrollo (no tenía Docker instalado). Sí se comprobó por separado el comando de arranque, el chequeo de salud y la consistencia de `npm ci`, pero **la primera construcción real está pendiente**: si falla algo, es el primer lugar donde mirar. El contenedor de la base usa PostgreSQL 17; el desarrollo local se hizo con la 18.
+> **Estado:** la imagen se construyó y se probó con `docker compose` al preparar el despliegue (la hizo @jhonAleVelasco, sin correcciones) y es la que corre en Azure. El `docker-compose.yml` usa PostgreSQL 17; en Azure se usa PostgreSQL 16 gestionado y el desarrollo local se hizo con la 18.
 
 ### Cómo usar la app
 
@@ -599,6 +598,7 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/historial/ranking?periodo=` | Localidades ordenadas por lo que llovió en el periodo. |
 | `GET /api/historial/destino?lat=&lon=&periodo=` | Cuándo llovió cerca de un punto (las 3 estaciones más cercanas). |
 | `GET /api/atajo?q=` | Una frase en texto plano que dice si llueve en un destino; pensada para el atajo de iPhone. |
+| `GET /api/atajo/ruta?origen=&destino=&modo=` | Una **tarjeta HTML** con mapa que dice si llueve en una ruta (con `lat=` y `lon=` en lugar de `origen=` usa la ubicación del teléfono; con `formato=texto` devuelve texto con emojis). |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
 
@@ -626,11 +626,16 @@ curl "http://localhost:8000/api/ruta?origen=Portal%2080&destino=Chapinero&modo=b
 
 ## Atajo para iPhone
 
-El endpoint **`GET /api/atajo?q=...`** responde **una frase en texto plano**, pensada para la app **Atajos** del iPhone: se escribe (o se dicta) un destino y el teléfono muestra o lee en voz alta si llueve allí.
+Con la app **Atajos** del iPhone se puede preguntar «¿llueve?» sin abrir el navegador: se escribe un lugar o una ruta y el teléfono contesta en una ventana. Son **tres atajos** que se arman a mano y llaman a estos endpoints del servidor:
 
-Acepta lo mismo que `/api/destino`: una localidad, un barrio, un lugar, una dirección, una esquina o coordenadas `lat,lon` (con la acción «Obtener ubicación actual» del iPhone se puede enviar la posición del teléfono).
+| Endpoint | Para qué | Qué responde |
+|---|---|---|
+| `GET /api/atajo?q=` | ¿Llueve cerca de un lugar? | Una frase en texto plano |
+| `GET /api/atajo/ruta?origen=&destino=&modo=` | ¿Me mojo en esta ruta? | Una **tarjeta HTML** con mapa (o texto con `formato=texto`) |
 
-**Ejemplos de respuesta**
+### Qué responde
+
+**Atajo de lugar** (`/api/atajo`): acepta lo mismo que `/api/destino` (localidad, barrio, lugar, dirección, esquina o coordenadas `lat,lon`).
 
 | Situación | Respuesta |
 |---|---|
@@ -640,26 +645,60 @@ Acepta lo mismo que `/api/destino`: una localidad, un barrio, un lugar, una dire
 | Lecturas viejas | `No se puede asegurar para Quinta Camacho, Chapinero: las estaciones más cercanas no tienen lectura reciente.` |
 | Destino no encontrado | `No encontré «xyz». Prueba con otra dirección o con un barrio.` |
 
-Si la ubicación es aproximada, la frase termina con «(Ubicación aproximada.)». Si el SAB o el buscador fallan, responde con un mensaje de texto y el código 502 o 503.
+**Atajo de ruta** (`/api/atajo/ruta`): una tarjeta con un banner de color (verde «Ruta sin lluvia», azul «Hay lluvia en tu ruta» o gris «No se puede asegurar»), un **mapa de calles con el recorrido pintado por tramos** (verde seco, azul lluvia, gris sin datos), las estaciones cercanas, el tiempo, la distancia, la hora aproximada de llegada y la lista de tramos.
 
-```bash
-curl "http://localhost:8000/api/atajo?q=Calle%2072%20con%20Carrera%2010"
-```
+Parámetros: `destino` (obligatorio); `origen` **o** `lat` y `lon` (ubicación del teléfono, con coma o con punto decimal); `modo` (`Carro / moto`, `Bus`, `Bici`, `A pie`, o `auto`, `bus`, `bicicleta`, `a_pie`); `formato` (`html` por defecto o `texto`).
 
-### Cómo crear el atajo en el iPhone
+<img src="docs/img/atajo-07-ruta-tarjeta.png" alt="Tarjeta de la ruta con el mapa" width="300">
 
-En la app **Atajos**, crear un atajo nuevo (llamado, por ejemplo, «¿Llueve?») con estas acciones, en orden:
+### Cómo se ve al usarlo
 
-1. **Solicitar entrada**, de tipo *Texto*, con la pregunta «¿A dónde vas?».
-2. **Obtener contenido de URL**, con la dirección `https://TU-URL/api/atajo?q=` seguida de la variable **Entrada proporcionada**.
-3. **Mostrar resultado** (o **Pronunciar texto**, para que lo diga en voz alta).
+| Atajo de lugar | | Atajo de ruta | | |
+|---|---|---|---|---|
+| <img src="docs/img/atajo-02-lugar-entrada.png" width="230"> | <img src="docs/img/atajo-03-lugar-resultado.png" width="230"> | <img src="docs/img/atajo-04-ruta-origen.png" width="230"> | <img src="docs/img/atajo-05-ruta-destino.png" width="230"> | <img src="docs/img/atajo-06-ruta-modo.png" width="230"> |
+| Se escribe el lugar | La respuesta | Se escribe el origen | Se escribe el destino | Se elige el modo |
 
-Después se puede añadir a la pantalla de inicio o usar con Siri. Si una dirección con espacios no responde, hay que comprobar que el atajo la envíe codificada (los espacios como `%20`).
+### Cómo armar los atajos
 
-### Estado y requisitos
+**1. Atajo de lugar**
 
-- **Probado:** el endpoint con cinco búsquedas reales (esquina, lugar, localidad, coordenadas y un texto inexistente) en el servidor local, y las frases de «llueve», «llovió hoy» y «sin lectura reciente» con datos de ejemplo.
-- **Pendiente:** probar el atajo **desde un iPhone**. El teléfono tiene que poder llegar al servidor. Con el computador en una red corporativa por cable no es posible (el firewall de dominio bloquea las conexiones entrantes y la red del teléfono suele ser otra), así que hace falta la **URL pública del despliegue** en la nube. Con una URL con HTTPS funciona desde cualquier red.
+<img src="docs/img/atajo-08-lugar-armado.png" alt="Atajo de lugar armado" width="300">
+
+1. **Solicitar entrada** (tipo *Texto*) con la pregunta «¿A dónde vas?».
+2. **Reemplazar texto**: espacio → `%20`.
+3. **Reemplazar texto**: `#` → `%23` (sobre el *Texto actualizado* anterior).
+4. **Obtener contenido de URL**: `http://TU-IP:8000/api/atajo?q=` seguido de la variable *Texto actualizado*.
+5. **Mostrar resultado** del contenido de la URL.
+
+**2. Atajo de ruta**
+
+<img src="docs/img/atajo-09-ruta-armado-1.png" width="260"> <img src="docs/img/atajo-10-ruta-armado-2.png" width="260"> <img src="docs/img/atajo-11-ruta-armado-3.png" width="260">
+
+1. **Solicitar entrada** «Origen» → los dos **Reemplazar texto** (espacio y `#`) → **Establecer variable** `Origen`.
+2. **Solicitar entrada** «Destino» → los dos **Reemplazar texto** → **Establecer variable** `Destino`.
+3. Una acción **Lista** con `Carro / moto`, `Bus`, `Bici` y `A pie` → **Elegir de la lista** → **Reemplazar texto** (espacio → `%20`) → **Establecer variable** `Modo`.
+4. **URL**: `http://TU-IP:8000/api/atajo/ruta?origen=` **[Origen]** `&destino=` **[Destino]** `&modo=` **[Modo]**.
+5. **Mostrar vista web** con esa URL: abre la tarjeta en una ventana **dentro de Atajos**, sin pasar a Safari.
+
+**3. Atajo maestro**
+
+<img src="docs/img/atajo-12-maestro-armado.png" alt="Atajo maestro armado" width="260"> <img src="docs/img/atajo-01-menu-maestro.png" alt="Menú del atajo maestro" width="300">
+
+Un **Seleccionar del menú** («¿Qué quieres consultar?») con dos opciones, «Un lugar» y «Una ruta». Debajo de cada una, **Ejecutar atajo** con el atajo de lugar y con el de ruta. Solo el maestro se añade a la pantalla de inicio.
+
+### Detalles que importan
+
+- **Espacios y `#`:** Atajos **no codifica** el texto que se pega en una URL. Un espacio corta la dirección («Movistar Arena» llegaba como «Movistar») y un `#` descarta todo lo que sigue, y casi todas las direcciones de Bogotá lo llevan. Por eso los dos *Reemplazar texto*.
+- **Variables:** se eligen de la lista (burbujas de color), sin espacios alrededor, y los nombres de los parámetros van en minúscula (`origen`, `destino`, `modo`).
+- **Mostrar vista web** (ruta) y **Mostrar resultado** (lugar): son las acciones que pintan la respuesta al lanzar el atajo desde la pantalla de inicio. «Detener y mostrar resultado» deja la ventana vacía.
+- **`TU-IP`:** es la IP del computador que corre el servidor; `iniciar.bat` la muestra al arrancar y **cambia** al cambiar de red. El iPhone y el computador deben estar en la misma red. Con la app en Azure se usa la dirección pública `https://…` y sin puerto.
+- **Mapa de la tarjeta:** las calles son teselas de OpenStreetMap, así que el teléfono necesita internet. Si no cargan, el recorrido se dibuja igual.
+
+### Estado
+
+- **Probado en un iPhone** contra el servidor local, en la misma red Wi-Fi (capturas de arriba): atajo de lugar, de ruta con mapa y maestro.
+- **Con la app desplegada:** el atajo funciona igual contra su URL pública (`https://…`, sin puerto), siempre que la versión publicada incluya estos endpoints.
+- **«Mi ubicación» como origen:** el servidor ya acepta `lat` y `lon` (con coma o punto decimal), pero el atajo de ruta todavía no lo usa. Es una mejora pendiente.
 
 ---
 
@@ -794,7 +833,7 @@ Cumulonimbus/
 │   ├── app/
 │   │   ├── main.py                # Arranque de FastAPI; sirve también el frontend compilado
 │   │   ├── config.py              # Configuración (.env)
-│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo, mapa, radar, historial, ruta, health
+│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo (+ atajo_ruta y atajo_mapa), mapa, radar, historial, ruta, health
 │   │   ├── services/              # Lógica: cliente SAB, reglas de lluvia, geocodificación,
 │   │   │                          #         historial, ruta, radar, barrios
 │   │   ├── repositories/          # Lectura y escritura en PostgreSQL
@@ -836,51 +875,58 @@ Hay **56 pruebas** que cubren las reglas de intensidad y acumulado, la lectura d
 
 ---
 
-## Despliegue en la nube
+## Despliegue en Azure
 
-El proyecto está pensado para desplegarse como **un solo servicio**: el backend de FastAPI sirve la API y también el frontend ya compilado, y se conecta a un PostgreSQL. Hay un `Dockerfile` listo, pero **el despliegue en la nube aún no se ha probado** (ni la imagen se ha construido todavía; ver el aviso de la opción con Docker en «Instalación y Uso»).
+La aplicación está **desplegada en Microsoft Azure** con **Azure Container Apps**. El despliegue lo hizo y lo documentó @jhonAleVelasco.
 
-### Opción A: con el Dockerfile (recomendada)
-
-Casi todos los proveedores aceptan desplegar desde un `Dockerfile` en la raíz del repositorio. Lo que debes configurar:
-
-| Qué | Valor |
+| Dato | Valor |
 |---|---|
-| Origen | este repositorio de GitHub (el proveedor detecta el `Dockerfile`) |
-| Base de datos | un PostgreSQL gestionado del mismo proveedor |
-| `DATABASE_URL` | su cadena de conexión, con el formato `postgresql+psycopg://usuario:clave@host:5432/base` |
-| `RECOLECTOR_ACTIVO` | `true` en **una sola** instancia (ver abajo) |
-| Puerto | el contenedor escucha en la variable `PORT` si el proveedor la entrega, y en el 8000 si no |
+| **App en vivo** | https://ca-cumulonimbus.greensea-2c8f82a0.centralus.azurecontainerapps.io |
+| **Suscripción** | Azure for Students |
+| **Grupo de recursos** | `rg-cumulonimbus` (Central US) |
+| **Fecha del despliegue** | 16 de octubre de 2026 |
+| **Documentación detallada** | Carpeta `docs/despliegue/`: paso a paso, capturas del portal, scripts y costos (a cargo de @jhonAleVelasco) |
 
-No hace falta comando de arranque propio: el `Dockerfile` ya aplica las migraciones y levanta la API (`alembic upgrade head && uvicorn ... --host 0.0.0.0 --port $PORT`).
+### Cómo está armado
 
-### Opción B: sin Docker
+Toda la aplicación viaja en **una sola imagen Docker** (la del `Dockerfile` de este repositorio): al arrancar aplica las migraciones y levanta la API, que también sirve el frontend y ejecuta el **recolector** cada 5 minutos.
 
-Para un proveedor que ejecute Python directamente:
+| Recurso | Para qué sirve |
+|---|---|
+| `ca-cumulonimbus` (Container App) | La app: API, frontend y recolector |
+| `cae-cumulonimbus` (entorno) | Red y plataforma donde corre la app |
+| `psql-cumulonimbus-8995` (PostgreSQL flexible 16) | Histórico de lecturas, caché de destinos y consultas |
+| `acrcumulonimbus8995` (Container Registry) | Guarda las imágenes Docker (`cumulonimbus:v1`, `v2`…) |
+| `kv-cumulonimbus-8995` (Key Vault) | Guarda la URL de la base y su contraseña |
+| `id-cumulonimbus` (identidad administrada) | Permite a la app descargar la imagen y leer secretos **sin contraseñas** |
+| `log-cumulonimbus` (Log Analytics) | Logs de la app |
 
-**Comando de construcción:**
+### Decisiones importantes
 
-```bash
-pip install -r backend/requirements.txt && cd frontend && npm ci && npm run build
+- **Una réplica fija** (`min-replicas 1`): el recolector debe correr cada 5 minutos; con escala a cero se apagaría sin visitas y el historial tendría huecos.
+- **La contraseña vive en Key Vault** y la app la lee con su identidad: no está en el código ni en la configuración visible. El `.env` nunca se sube a git.
+- **SSL obligatorio** en PostgreSQL y acceso solo desde servicios de Azure; la base no acepta conexiones desde internet.
+- **Imagen construida en local** y subida con `docker push`, porque Azure for Students bloquea `az acr build`.
+
+### Actualizar la app
+
+```powershell
+.\scripts\actualizar.ps1 -Version v2
 ```
 
-**Comando de arranque:**
+Construye la imagen, la sube con la etiqueta nueva, cambia la Container App a esa imagen y consulta `/api/health`. Hay que subir el número de versión en cada despliegue para poder volver atrás.
 
-```bash
-cd backend && alembic upgrade head && python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
+### Costos aproximados (precios de lista, Central US)
 
-### Qué reemplaza a `iniciar.bat` en la nube
+PostgreSQL B1ms ≈ 16 USD al mes (cobra las 24 horas), Container Registry Basic ≈ 5 USD, la Container App unos pocos dólares y Key Vault, identidad y logs céntimos. Para pausar sin borrar hay que detener la base y bajar las réplicas a 0 (el recolector se detiene); para borrar todo, eliminar el grupo `rg-cumulonimbus`.
 
-`iniciar.bat` es solo para Windows y para desarrollo (usa el entorno virtual local, `--reload` y el puerto fijo 8000). En la nube lo sustituye el `CMD` del `Dockerfile` o el comando de arranque de la opción B; ambos hacen lo mismo en Linux: migrar la base y levantar la API escuchando en todas las interfaces.
+### Estado y pendientes conocidos
 
-### Cosas que debes tener en cuenta
+- **Funciona:** `/api/health` responde `{"estado":"ok","base_datos":"ok"}`, el frontend carga y el recolector guarda lecturas.
+- **Radar:** `/api/radar` devolvió **502** desde Azure el 16/10. Hay que revisar si el KMZ del IDIGER es accesible desde esa red. La app sigue funcionando sin el radar.
+- **CI/CD:** el despliegue automático con GitHub Actions está pendiente; hoy se despliega con el script.
 
-- **Una sola instancia con el recolector.** Si escalas a varias réplicas, solo una debe tener `RECOLECTOR_ACTIVO=true`. Aun así no se duplican datos (la restricción única lo impide), pero se haría trabajo repetido.
-- **Planes gratuitos que «duermen».** Algunos proveedores apagan el servicio tras un rato sin visitas. Mientras está apagado **no se guarda histórico**. Si el histórico te importa, necesitas un plan que no duerma o un servicio externo que lo despierte cada pocos minutos.
-- **Servicios públicos con límites.** Nominatim y Valhalla públicos son para uso moderado (Nominatim pide máximo 1 consulta por segundo y un `User-Agent` identificable, que la app ya envía). El recolector **solo** consulta al SAB; Nominatim y Valhalla solo se usan cuando alguien busca un lugar o calcula una ruta. Para mucho tráfico conviene alojar tu propia instancia (`RUTA_URL`) o usar un geocodificador con clave (`IDECA_API_KEY`).
-- **El SAB debe ser accesible desde el servidor.** Si el proveedor bloquea salidas a internet o el SAB bloquea la IP del servidor, la app mostrará un error 502.
-- **Cualquiera con el enlace podrá usarla.** La app no tiene usuarios ni contraseña.
+El `Dockerfile` sirve igual en otros proveedores: basta con definir `DATABASE_URL` y dejar el recolector activo en **una sola** instancia.
 
 ---
 
@@ -911,6 +957,11 @@ Para no engañarte con lo que muestra la app:
 | Error 502 «El SAB no está respondiendo» | El servicio del SAB está caído o lento. Intenta de nuevo en unos minutos. |
 | Error 503 al buscar una dirección o calcular una ruta | Falló un servicio externo (Catastro, Nominatim, Valhalla), por ejemplo por la red de tu empresa o colegio. Reintenta. |
 | El radar no aparece | Está apagado por defecto: pulsa «Radar». Si no hay ecos moderados o fuertes, no se dibuja nada (es lo esperado). |
+| El atajo dice «falta `destino`» o encuentra otro lugar (por ejemplo «Movistar» en vez de «Movistar Arena») | Un espacio o un `#` **corta la dirección web**. Hay que usar los dos «Reemplazar texto» del atajo: espacio → `%20` y `#` → `%23`. En el servidor se ve exactamente qué llegó (`GET /api/atajo?...`). |
+| El atajo no conecta con el servidor | El iPhone y el computador deben estar en la misma red, el servidor encendido y la IP vigente: cambia al cambiar de red y la muestra `iniciar.bat` al arrancar. |
+| Al lanzar el atajo desde la pantalla de inicio sale una ventana vacía | Usa **Mostrar resultado** (lugar) o **Mostrar vista web** (ruta); «Detener y mostrar resultado» no se pinta fuera del editor. |
+| La tarjeta de la ruta sale sin calles | El teléfono necesita internet para las teselas de OpenStreetMap; el recorrido se dibuja igual. |
+| GitHub marca conflicto al fusionar un archivo que es igual en las dos ramas | Suele ser la diferencia de saltos de línea (LF/CRLF). Se elige la versión de `main`. Para evitarlo, un archivo compartido lo sube solo su dueño. |
 | `npm run build` falla | Comprueba que Node sea de la versión 20 o superior y borra `frontend/node_modules` para repetir `npm install`. |
 
 ---
@@ -925,25 +976,13 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Historial por horas y por días |
 | ✅ | Ruta de un lugar a otro |
 | ✅ | Radar con filtro de ecos débiles y zonas de color por estación |
-| 🟡 | Atajo para iPhone: endpoint listo y probado en el servidor local; falta probarlo en un iPhone con la URL pública |
-| 🟡 | Docker: archivos escritos, falta la primera construcción real |
-| ⏳ | Guía de despliegue en un proveedor concreto |
-
----
-
-## Lecciones aprendidas
-
-> **Borrador:** las dos primeras viñetas salen del desarrollo de la aplicación base; las demás las completa el equipo con su experiencia del proceso.
-
-**Sobre la aplicación**
-- **Verificar con datos reales.** Varias correcciones salieron de comparar lo que se veía en pantalla con lo que decían las fuentes (el radar frente a los pluviómetros, las lecturas viejas de una estación).
-- **«Sin dato» no es «seco».** Mostrar la incertidumbre (tramos «sin datos», estaciones sin lectura reciente, aviso de ubicación aproximada) evita conclusiones falsas.
-- **Documentar los límites.** Aclarar qué mide cada fuente y qué no (por ejemplo, que el radar ve lluvia en el aire) evita que el usuario malinterprete el mapa.
-
-**Sobre el proceso**
-- [A completar por el equipo: qué funcionó en la metodología Kanban]
-- [A completar por el equipo: dificultades al trabajar en grupo y cómo se resolvieron]
-- [A completar por el equipo: qué se haría distinto]
+| ✅ | Docker (imagen construida y probada) |
+| ✅ | Despliegue en Azure Container Apps |
+| ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
+| ⏳ | Revisar el error 502 del radar en Azure |
+| ⏳ | «Mi ubicación» como origen en el atajo de ruta |
+| ⏳ | GitHub Actions: integración continua y despliegue automático |
+| ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
 
 ---
 
@@ -958,6 +997,7 @@ Todos son servicios públicos y gratuitos:
 | Direcciones, barrios y localidades | Catastro Bogotá (placas domiciliarias, sector catastral, localidad) |
 | Lugares y barrios | Nominatim, de OpenStreetMap (© colaboradores de OpenStreetMap) |
 | Rutas | Valhalla, de OpenStreetMap |
+| Mapa de la tarjeta del atajo | Teselas de OpenStreetMap (© colaboradores de OpenStreetMap) |
 
 Este proyecto no está afiliado al IDIGER, a la Alcaldía de Bogotá ni a OpenStreetMap. Los datos pertenecen a sus respectivas entidades.
 
@@ -967,7 +1007,7 @@ Aún no se ha definido una licencia para el código.
 
 ## Enlaces importantes
 
-- **Aplicación desplegada:** [pendiente de desplegar]
-- **Repositorio:** [SGil14/cloud_Cumulonimbus](https://github.com/SGil14/cloud_Cumulonimbus)
+- **Aplicación desplegada:** https://ca-cumulonimbus.greensea-2c8f82a0.centralus.azurecontainerapps.io
+- **Repositorio del curso:** [SGil14/cloud_Cumulonimbus](https://github.com/SGil14/cloud_Cumulonimbus)
 - **GitHub Project (tablero Kanban):** [Cumulonimbus · Tablero Kanban](https://github.com/users/SGil14/projects/2)
 - **Repositorio previo de la aplicación base:** [SGil14/Cumulonimbus](https://github.com/SGil14/Cumulonimbus)
