@@ -19,7 +19,7 @@ param(
   [string]$Region = "centralus",          # Azure for Students solo permite algunas regiones
   [string]$Grupo = "rg-cumulonimbus-k8s",
   [string]$Cluster = "aks-cumulonimbus",
-  [string]$TamanoNodo = "Standard_B2s",   # 2 vCPU · 4 GiB: alcanza para la app, Postgres y el monitoreo
+  [string]$TamanoNodo = "Standard_D2s_v3",   # 2 vCPU · 8 GiB. Azure for Students solo deja tamaños con cuota (Dv3/Dv4)
   [int]$Nodos = 1
 )
 

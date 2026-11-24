@@ -57,7 +57,9 @@ if (-not (kubectl get secret cumulonimbus-secretos -n cumulonimbus --ignore-not-
     --from-literal=DATABASE_URL="postgresql+psycopg://lluvia_app:$pg@postgres:5432/lluvia_bogota"
 } else { Write-Host "   cumulonimbus-secretos ya existe" }
 if (-not (kubectl get secret grafana-admin -n monitoreo --ignore-not-found -o name)) {
-  kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=(Clave)
+  $gf = Clave
+  kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=$gf
+  if ($LASTEXITCODE) { throw "No se pudo crear el Secret de Grafana" }
   Write-Host "   Grafana: usuario admin. Contraseña: ver README · Kubernetes y monitoreo" -ForegroundColor Yellow
 } else { Write-Host "   grafana-admin ya existe" }
 
@@ -90,6 +92,7 @@ kubectl rollout status deployment/grafana -n monitoreo --timeout=300s
 Write-Host "`nListo. Imagen desplegada: $Imagen" -ForegroundColor Green
 kubectl get pods,svc -n cumulonimbus
 kubectl get pods,svc -n monitoreo
-Write-Host "`nEn Docker Desktop: app http://localhost · Prometheus http://localhost:9090 · Grafana http://localhost:3000"
-Write-Host "En AKS: usa la EXTERNAL-IP de cada Service de arriba (api :80, prometheus :9090, grafana :3000)."
+Write-Host "`nEn Docker Desktop: app http://localhost · Grafana http://localhost:3000"
+Write-Host "En AKS: usa la EXTERNAL-IP de los Services api (:80) y grafana (:3000)."
+Write-Host "Prometheus queda solo dentro del clúster:  kubectl port-forward svc/prometheus 9090:9090 -n monitoreo  y abrir http://localhost:9090"
 Write-Host "Tráfico: python scripts/trafico.py --url http://<ip-o-localhost> --segundos 150 --usuarios 60"

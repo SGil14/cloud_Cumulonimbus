@@ -124,7 +124,9 @@ metadata:
   name: prometheus
   namespace: monitoreo
 spec:
-  type: LoadBalancer   # Docker Desktop: http://localhost:9090
+  # Solo dentro del clúster: Grafana lo consulta por http://prometheus.monitoreo.svc:9090.
+  # Para verlo desde el PC:  kubectl port-forward svc/prometheus 9090:9090 -n monitoreo
+  type: ClusterIP
   selector:
     app: prometheus
   ports:

@@ -1004,7 +1004,7 @@ El script construye la imagen, crea los Secrets con contraseñas aleatorias (sol
 |---|---|
 | App | http://localhost |
 | Métricas | http://localhost/metrics |
-| Prometheus | http://localhost:9090 |
+| Prometheus | `kubectl port-forward svc/prometheus 9090:9090 -n monitoreo` y luego http://localhost:9090 (solo es accesible dentro del clúster) |
 | Grafana | http://localhost:3000 (usuario `admin`) |
 
 Contraseña de Grafana:
@@ -1068,9 +1068,18 @@ powershell -ExecutionPolicy Bypass -File .\scripts\aks-crear.ps1 -Suscripcion "<
 powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
 ```
 
-`aks-crear.ps1` crea el grupo `rg-cumulonimbus-k8s`, un **ACR** y un **AKS** (plan gratuito, 1 nodo `Standard_B2s`), y conecta el ACR al clúster con identidad administrada, **sin usuario ni contraseña**. Después `k8s-desplegar.ps1 -Acr` construye la imagen, la sube al ACR con su versión y despliega todo. AKS ya trae metrics-server. Las IP públicas salen en `kubectl get svc`.
+`aks-crear.ps1` crea el grupo `rg-cumulonimbus-k8s`, un **ACR** y un **AKS** (plan gratuito, 1 nodo `Standard_D2s_v3`: 2 vCPU y 8 GiB), y conecta el ACR al clúster con identidad administrada, **sin usuario ni contraseña**. Después `k8s-desplegar.ps1 -Acr` construye la imagen, la sube al ACR con su versión y despliega todo. AKS ya trae metrics-server. Las IP públicas salen en `kubectl get svc`.
 
 Para no gastar crédito: `az aks stop -g rg-cumulonimbus-k8s -n aks-cumulonimbus` (y `az aks start` antes de la demo).
+
+Probado en la suscripción *Azure for Students* del equipo (24/11/2026): la app quedó en una IP pública del Service `api`, Grafana en la del Service `grafana` (puerto 3000), y la imagen sale del ACR con versión (`acrcumulonimbusk8se1d4.azurecr.io/cumulonimbus:sha-...`). Con `scripts/trafico.py --usuarios 80` el HPA subió la API de 2 a 6 réplicas y atendió 15.214 peticiones sin errores.
+
+Límites de *Azure for Students* que obligaron a ajustar el despliegue:
+
+| Límite | Efecto | Solución |
+|---|---|---|
+| Solo algunos tamaños de máquina, y varios con cuota 0 (Bs, Dalsv7) | El nodo nunca se creaba y AKS quedaba en «Creating» | `Standard_D2s_v3` (familia DSv3, con cuota) |
+| Máximo 3 IP públicas | AKS usa una para su salida, la API otra y Grafana otra | Prometheus es `ClusterIP`: Grafana lo consulta por dentro y se ve con `kubectl port-forward` |
 
 ### Demo
 
