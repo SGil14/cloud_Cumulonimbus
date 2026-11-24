@@ -96,3 +96,28 @@ class Consulta(Base):
     creado_en: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), index=True
     )
+
+
+class Usuario(Base):
+    """Persona registrada. La contraseña se guarda como hash, nunca en texto plano."""
+
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    correo: Mapped[str] = mapped_column(String(254), unique=True)
+    clave_hash: Mapped[str] = mapped_column(String(255))
+    rol: Mapped[str] = mapped_column(String(20), default="usuario", server_default="usuario")  # usuario | administrador
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Favorito(Base):
+    """Destino guardado por un usuario. Cada usuario solo ve y modifica los suyos."""
+
+    __tablename__ = "favoritos"
+    __table_args__ = (UniqueConstraint("usuario_id", "nombre", name="uq_favorito_usuario_nombre"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)
+    nombre: Mapped[str] = mapped_column(String(100))
+    texto: Mapped[str] = mapped_column(String(300))  # lo que se escribe en el buscador
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
