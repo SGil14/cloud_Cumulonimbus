@@ -7,6 +7,9 @@ __pycache__/
 .venv/
 .pytest_cache/
 
+# Datos y modelos generados por ml/
+ml/data/
+
 # Node / front
 node_modules/
 frontend/dist/
