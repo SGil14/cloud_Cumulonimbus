@@ -1,23 +1,57 @@
 import type {
-  Destino, EstacionesRespuesta, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Radar,
-  RankingHistorial, Resumen, RutaRespuesta, SerieHistorial,
+  Destino, EstacionesRespuesta, Favorito, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Radar,
+  RankingHistorial, Resumen, RutaRespuesta, SerieHistorial, Sesion, Usuario,
 } from "./types";
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  /** Código HTTP, si la respuesta llegó (401 = sin sesión o token vencido). */
+  estado?: number;
+  constructor(mensaje: string, estado?: number) {
+    super(mensaje);
+    this.estado = estado;
+  }
+}
 
-async function pedir<T>(ruta: string, senal?: AbortSignal): Promise<T> {
+interface Opciones {
+  senal?: AbortSignal;
+  metodo?: "GET" | "POST" | "PUT" | "DELETE";
+  cuerpo?: unknown;
+  token?: string;
+}
+
+async function pedir<T>(ruta: string, opciones: AbortSignal | Opciones = {}): Promise<T> {
+  const o: Opciones = opciones instanceof AbortSignal ? { senal: opciones } : opciones;
+  const cabeceras: Record<string, string> = {};
+  if (o.cuerpo !== undefined) cabeceras["Content-Type"] = "application/json";
+  if (o.token) cabeceras.Authorization = `Bearer ${o.token}`;
   let resp: Response;
   try {
-    resp = await fetch(ruta, { signal: senal });
+    resp = await fetch(ruta, {
+      method: o.metodo ?? "GET",
+      headers: cabeceras,
+      body: o.cuerpo === undefined ? undefined : JSON.stringify(o.cuerpo),
+      signal: o.senal,
+    });
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw new ApiError("No hay conexión con el servidor.");
   }
   if (!resp.ok) {
     const cuerpo = await resp.json().catch(() => null);
-    throw new ApiError(cuerpo?.detail ?? `Error ${resp.status}`);
+    throw new ApiError(mensajeDe(cuerpo?.detail, resp.status), resp.status);
   }
+  if (resp.status === 204) return undefined as T;
   return resp.json() as Promise<T>;
+}
+
+/** FastAPI responde `detail` como texto, o como lista cuando falla la validación de los datos. */
+function mensajeDe(detalle: unknown, estado: number): string {
+  if (typeof detalle === "string") return detalle;
+  if (Array.isArray(detalle) && detalle.length > 0) {
+    const primero = detalle[0] as { msg?: string };
+    return (primero.msg ?? "").replace(/^Value error, /, "") || `Datos no válidos (${estado}).`;
+  }
+  return `Error ${estado}`;
 }
 
 export const api = {
@@ -34,4 +68,16 @@ export const api = {
     pedir<RankingHistorial>(`/api/historial/ranking?periodo=${periodo}`, senal),
   historialDestino: (lat: number, lon: number, periodo: Periodo, senal?: AbortSignal) =>
     pedir<HistorialDestino>(`/api/historial/destino?lat=${lat}&lon=${lon}&periodo=${periodo}`, senal),
+
+  // --- cuenta y favoritos
+  registro: (correo: string, clave: string) =>
+    pedir<Usuario>("/api/auth/registro", { metodo: "POST", cuerpo: { correo, clave } }),
+  login: (correo: string, clave: string) =>
+    pedir<Sesion>("/api/auth/login", { metodo: "POST", cuerpo: { correo, clave } }),
+  yo: (token: string) => pedir<Usuario>("/api/auth/yo", { token }),
+  usuarios: (token: string) => pedir<Usuario[]>("/api/admin/usuarios", { token }),
+  favoritos: (token: string) => pedir<Favorito[]>("/api/favoritos", { token }),
+  crearFavorito: (token: string, nombre: string, texto: string) =>
+    pedir<Favorito>("/api/favoritos", { metodo: "POST", token, cuerpo: { nombre, texto } }),
+  borrarFavorito: (token: string, id: number) => pedir<void>(`/api/favoritos/${id}`, { metodo: "DELETE", token }),
 };

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Barra } from "./components/Barra";
+import { Cuenta } from "./components/Cuenta";
 import { Historial } from "./components/Historial";
 import { LeyendaRadar } from "./components/LeyendaRadar";
 import { MapaLluvia } from "./components/MapaLluvia";
@@ -7,6 +8,7 @@ import { Panel } from "./components/Panel";
 import { useDiseno } from "./hooks/useDiseno";
 import { useEsMovil } from "./hooks/useEsMovil";
 import { useLluvia } from "./hooks/useLluvia";
+import { useSesion } from "./hooks/useSesion";
 import { useTema } from "./hooks/useTema";
 import { api } from "./lib/api";
 import type { Destino, ModoRuta, RutaRespuesta } from "./lib/types";
@@ -16,6 +18,8 @@ export default function App() {
   const esMovil = useEsMovil();
   const { diseno, siguiente: cambiarDiseno } = useDiseno();
   const { resumen, estaciones, limites, radar, cargando, error, actualizar } = useLluvia();
+  const sesion = useSesion();
+  const [cuentaAbierta, setCuentaAbierta] = useState(false);
   // El radar arranca apagado: ve lluvia en el aire, que a veces no llega al suelo, y puede confundir.
   const [mostrarRadar, setMostrarRadar] = useState(() => {
     try { return localStorage.getItem("lluvia-radar") === "1"; } catch { return false; }
@@ -116,6 +120,8 @@ export default function App() {
         onAlternarRadar={alternarRadar}
         onCambiarDiseno={cambiarDiseno}
         onAbrirHistorial={() => setHistorial({ abierto: true, enDestino: false })}
+        usuario={sesion.usuario}
+        onAbrirCuenta={() => setCuentaAbierta(true)}
       />
       {radar && mostrarRadar && <LeyendaRadar radar={radar} />}
 
@@ -145,11 +151,26 @@ export default function App() {
         errorRuta={errorRuta}
         onCalcularRuta={calcularRuta}
         onLimpiarRuta={() => { setRuta(null); setErrorRuta(null); }}
+        favoritos={sesion.favoritos}
+        sesionActiva={sesion.usuario !== null}
+        onGuardarFavorito={sesion.agregarFavorito}
+        onBorrarFavorito={sesion.borrarFavorito}
         onSeleccionarEstacion={(id) => {
           setSeleccionada(id);
           if (id !== null && esMovil) setPanelAbierto(false);
         }}
       />
+
+      {cuentaAbierta && (
+        <Cuenta
+          usuario={sesion.usuario}
+          token={sesion.token}
+          onIniciar={sesion.iniciarSesion}
+          onRegistrar={sesion.registrar}
+          onSalir={sesion.salir}
+          onCerrar={() => setCuentaAbierta(false)}
+        />
+      )}
 
       {historial.abierto && (
         <Historial
