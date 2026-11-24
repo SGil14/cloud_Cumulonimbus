@@ -379,19 +379,52 @@ Las métricas se calculan a partir del tablero (GitHub Projects → *Insights*) 
 | Métrica | Cómo se mide | Resultado |
 |---|---|---|
 | **Velocity** | Puntos completados por sprint (campo *Estimación*) | Planeado: Sprint 1 = 30, Sprint 2 = 36, Sprint 3 = 38 (total 104). Entregados: 30, 36 y 38 puntos (**104 de 104**). Sin fechas de sprint no se calcula la velocidad por tiempo. |
-| **Burndown** | Puntos restantes frente al tiempo del sprint | [pendiente] |
-| **Lead time** | Tiempo desde *Backlog* hasta *Done* | [pendiente] |
-| **Cycle time** | Tiempo desde *In Progress* hasta *Done* | [pendiente] |
-| **Throughput** | Historias completadas por periodo | [pendiente] |
+| **Burndown** | Puntos restantes frente al tiempo del sprint | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Lead time** | Tiempo desde *Backlog* hasta *Done* | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Cycle time** | Tiempo desde *In Progress* hasta *Done* | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Throughput** | Historias completadas por periodo | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+
+### Proyecto 3: métricas con las fechas de los sprints
+
+Los sprints del Proyecto 3 tienen fechas reales: **Sprint 4** del 23 al 24 de noviembre, **Sprint 5** del 25 al 26 y **Sprint 6** el 27 de noviembre (día de la entrega). Las cifras salen del tablero con un script que se puede volver a correr cuando se quiera:
+
+```bash
+python scripts/metricas.py        # necesita la CLI gh con sesión iniciada
+```
+
+_Calculado el 24/11/2026 14:05 desde el tablero._
+
+| Sprint | Fechas | Historias (hechas/total) | Puntos planeados | Puntos terminados | Velocidad (pts/día) |
+|---|---|---|---|---|---|
+| Sprint 1 | sin fechas (Proyecto 2) | 9/9 | 30 | 30 | — |
+| Sprint 2 | sin fechas (Proyecto 2) | 11/11 | 36 | 36 | — |
+| Sprint 3 | sin fechas (Proyecto 2) | 8/8 | 38 | 38 | — |
+| Sprint 4 | 23/11 al 24/11 | 6/12 | 47 | 27 | 13,5 |
+| Sprint 5 | 25/11 al 26/11 | 2/13 | 65 | 11 | 5,5 |
+| Sprint 6 | 27/11 | 1/11 | 29 | 3 | 3,0 |
+
+- **Historias del Proyecto 3 cerradas:** 9 de 36
+- **Lead time** (Backlog → Done): promedio 19,8 h · mediana 19,6 h · máximo 20,2 h (n = 9)
+- **Cycle time** (primer commit → Done): promedio 0,9 h · mediana 0,9 h · máximo 0,9 h (n = 3)
+- **Throughput** (historias cerradas por día): 2026-11-24: 9
+
+**Cómo leerlas**
+
+- **Velocidad:** puntos de las historias cerradas dividido entre los días del sprint. Los sprints 1 a 3 son del Proyecto 2 y nunca tuvieron fechas, por eso no se les calcula velocidad por tiempo.
+- **Lead time:** desde que la historia entra al tablero (se creó en *Backlog* el 23/11 a las 21:07) hasta que se cierra. Incluye el tiempo de espera en el backlog, por eso es mucho mayor que el cycle time.
+- **Cycle time:** desde el primer commit que menciona la historia hasta que se cierra. Solo cuenta las historias con commits identificados por su número (`HU-xx`); las que se hicieron sin mencionarlo en el commit no entran.
+- **Burndown:** los puntos restantes del Proyecto 3 son los planeados menos los terminados de cada sprint; al ser sprints de uno o dos días, se lee mejor con la tabla de velocidad que con una curva.
+- El tablero no guarda la fecha en que una tarjeta pasa a *In Progress*, por eso el cycle time se aproxima con el primer commit.
+- Las cifras de la tabla son un corte; se recalculan al cierre de cada sprint y antes de la entrega.
 
 ### Resumen del proyecto
 
 - **Historias completadas:** 28 / 28 (fusionadas en `main`)
 - **Velocity promedio:** 34,7 puntos por sprint (104 puntos entre 3 sprints)
 - **Bugs encontrados:** 13 (documentados como issues cerrados, BUG-01 a BUG-13)
-- **Tiempo promedio de resolución:** [pendiente]
+- **Tiempo promedio de resolución:** ver las métricas del Proyecto 3 (lead time y cycle time)
 
-> Las fechas de los sprints deben definirse antes de calcular burndown, lead time y cycle time. Los 13 bugs iniciales se crearon y cerraron al documentar el trabajo previo, por lo que no representan tiempos reales de resolución.
+> Los sprints 1 a 3 (Proyecto 2) no tienen fechas; los del Proyecto 3 sí, y sus métricas están arriba. Los 13 bugs iniciales se crearon y cerraron al documentar el trabajo previo, por lo que no representan tiempos reales de resolución.
 
 ---
 
