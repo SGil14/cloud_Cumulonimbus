@@ -828,6 +828,14 @@ Parámetros: `destino` (obligatorio); `origen` **o** `lat` y `lon` (ubicación d
 4. **URL**: `http://TU-IP:8000/api/atajo/ruta?origen=` **[Origen]** `&destino=` **[Destino]** `&modo=` **[Modo]**.
 5. **Mostrar vista web** con esa URL: abre la tarjeta en una ventana **dentro de Atajos**, sin pasar a Safari.
 
+**Variante: usar tu ubicación como origen** (en el atajo de ruta, en lugar de escribir el origen)
+
+1. Quita los pasos del «Origen» y agrega **Obtener ubicación actual** (la primera vez, iOS pide permiso de ubicación para Atajos).
+2. **Obtener detalles de ubicaciones** → *Latitud* → **Establecer variable** `Lat`; y otra igual con *Longitud* → `Lon`.
+3. La **URL** pasa a ser: `http://TU-IP:8000/api/atajo/ruta?lat=` **[Lat]** `&lon=` **[Lon]** `&destino=` **[Destino]** `&modo=` **[Modo]**.
+
+El iPhone entrega los decimales con coma (`4,6097`); el servidor acepta coma o punto. La tarjeta muestra «Tu ubicación (barrio, localidad)» como origen.
+
 **3. Atajo maestro**
 
 <img src="docs/img/atajo-12-maestro-armado.png" alt="Atajo maestro armado" width="260"> <img src="docs/img/atajo-01-menu-maestro.png" alt="Menú del atajo maestro" width="300">
@@ -846,7 +854,7 @@ Un **Seleccionar del menú** («¿Qué quieres consultar?») con dos opciones, �
 
 - **Probado en un iPhone** contra el servidor local, en la misma red Wi-Fi (capturas de arriba): atajo de lugar, de ruta con mapa y maestro.
 - **Con la app desplegada:** el atajo funciona igual contra su URL pública (`https://…`, sin puerto), siempre que la versión publicada incluya estos endpoints.
-- **«Mi ubicación» como origen:** el servidor ya acepta `lat` y `lon` (con coma o punto decimal), pero el atajo de ruta todavía no lo usa. Es una mejora pendiente.
+- **«Mi ubicación» como origen:** el servidor acepta `lat` y `lon` con coma o punto decimal (probado con `lat=4,6097&lon=-74,0817`: devuelve «Tu ubicación (El Liston, Los Mártires) → Portal 80»). Los pasos para armar la variante en Atajos están arriba; **falta probarla en un iPhone y agregar las capturas**.
 
 ---
 
@@ -1380,7 +1388,7 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Despliegue en Azure Container Apps |
 | ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
 | ⏳ | Revisar el error 502 del radar en Azure |
-| ⏳ | «Mi ubicación» como origen en el atajo de ruta |
+| ⏳ | «Mi ubicación» como origen en el atajo de ruta (servidor y pasos listos; falta probarlo en el iPhone) |
 | ✅ | GitHub Actions: integración continua, publicación de la imagen y despliegue en AKS |
 | ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
 
