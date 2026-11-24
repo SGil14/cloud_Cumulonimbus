@@ -40,10 +40,8 @@ Proyecto del curso **Desarrollo de Aplicaciones en la Nube · Proyecto 2** (gest
 | Rol | Integrante | Usuario de GitHub | Responsabilidad |
 |---|---|---|---|
 | **Product Owner** | Sebastian Gil Marin | [@SGil14](https://github.com/SGil14) | Prioriza el backlog, define y valida los criterios de aceptación y acepta cada historia en la columna *Review* antes de pasarla a *Done*. Además desarrolla 11 historias (HU-03, 04, 05, 07, 09, 10, 21, 24, 26, 27, 28) y se encarga de la documentación (HU-26). |
-| Desarrollador | [Nombre completo] | [@iancardonag](https://github.com/iancardonag) | Desarrolla 8 historias (HU-02, 06, 08, 14, 17, 18, 23, 25) en backend, frontend y pruebas. |
+| Desarrollador | Ian Cardona | [@iancardonag](https://github.com/iancardonag) | Desarrolla 8 historias (HU-02, 06, 08, 14, 17, 18, 23, 25) en backend, frontend y pruebas. |
 | Desarrollador y responsable del despliegue | Jhon Alejandro Velasco García | [@jhonAleVelasco](https://github.com/jhonAleVelasco) | Desarrolla 9 historias (HU-01, 11, 12, 13, 15, 16, 19, 20, 22) y se encarga del **despliegue en Azure** (ver «Despliegue en Azure»). |
-
-> Pendiente: escribir el nombre completo de @iancardonag.
 
 ---
 
