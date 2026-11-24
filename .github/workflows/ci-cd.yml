@@ -1,0 +1,111 @@
+# CI/CD de Cumulonimbus
+#
+#  - En cada Pull Request hacia main: corre las pruebas del backend y construye la imagen (sin publicarla).
+#  - En cada fusión a main y en cada etiqueta vX.Y.Z: además publica la imagen en GitHub Container Registry
+#    (ghcr.io/<dueño>/<repo>) con etiquetas de versión. No hace falta ningún secreto: usa el GITHUB_TOKEN.
+#  - Si el repositorio tiene configurado el despliegue en AKS (variables y secretos de abajo), actualiza la
+#    API y el recolector del clúster con la imagen recién publicada.
+
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Pruebas del backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+      # Las pruebas no tocan la base; solo hace falta que la variable exista.
+      - run: python -m pytest -q
+        env:
+          DATABASE_URL: postgresql+psycopg://ci:ci@localhost:5432/ci
+
+  imagen:
+    name: Imagen Docker
+    needs: pruebas
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write          # publicar en ghcr.io con el GITHUB_TOKEN
+    outputs:
+      etiqueta: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Iniciar sesión en GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Etiquetas de versión
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern=v{{version}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+      # El Dockerfile compila también el frontend (etapa Node), así que esto prueba ambos.
+      - name: Construir (y publicar fuera de los PR)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  desplegar-aks:
+    name: Desplegar en AKS
+    needs: imagen
+    # Solo en main y solo si el despliegue a AKS está configurado (ver README · Kubernetes · AKS).
+    if: github.ref == 'refs/heads/main' && vars.AKS_NOMBRE != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read           # el ACR copia la imagen desde ghcr.io con este token
+    steps:
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_GRUPO }}
+          cluster-name: ${{ vars.AKS_NOMBRE }}
+      - name: Copiar la imagen al ACR y actualizar los Deployments
+        env:
+          ACR: ${{ vars.ACR_NOMBRE }}
+          GHCR_USUARIO: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="sha-${GITHUB_SHA::7}"
+          az acr import --name "$ACR" --source "ghcr.io/${GITHUB_REPOSITORY,,}:$VERSION" \
+            --image "cumulonimbus:$VERSION" --username "$GHCR_USUARIO" --password "$GHCR_TOKEN" --force
+          IMG="$ACR.azurecr.io/cumulonimbus:$VERSION"
+          kubectl set image deployment/api api="$IMG" -n cumulonimbus
+          kubectl set image deployment/recolector recolector="$IMG" -n cumulonimbus
+          kubectl rollout status deployment/api -n cumulonimbus --timeout=300s

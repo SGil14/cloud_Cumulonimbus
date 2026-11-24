@@ -1,21 +1,49 @@
-# Despliega Cumulonimbus completo en el clúster de Kubernetes local (Docker Desktop):
-# app + PostgreSQL + Prometheus + Grafana. Se puede correr varias veces sin problema.
+# Despliega Cumulonimbus completo en Kubernetes: app + PostgreSQL + Prometheus + Grafana.
+# Sirve para el clúster local (Docker Desktop) y para AKS. Se puede correr varias veces sin problema.
 #
-# Uso (desde la raíz del repositorio, con Kubernetes de Docker Desktop encendido):
-#   powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
+# Uso (desde la raíz del repositorio, con kubectl apuntando al clúster):
+#   Local (Docker Desktop):
+#     powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
+#   AKS (construye la imagen y la sube al ACR conectado al clúster; AKS ya trae metrics-server):
+#     powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr acrcumulonimbusk8s1234 -SinMetricsServer
+#   Con una imagen ya publicada (por ejemplo la del pipeline):
+#     ... -Imagen ghcr.io/sgil14/cloud_cumulonimbus:sha-abc1234
 #
+# Cada despliegue usa una etiqueta de versión (sha-<commit>), nunca solo "latest".
 # La primera vez crea los Secrets con contraseñas aleatorias (no se escriben en ningún archivo).
+
+param(
+  [string]$Imagen = "",          # imagen ya construida; si se omite, se construye aquí
+  [string]$Acr = "",             # nombre del Azure Container Registry al que subir la imagen (AKS)
+  [switch]$SinMetricsServer      # AKS y otros clústeres administrados ya lo traen
+)
 
 $ErrorActionPreference = "Stop"
 $raiz = Split-Path $PSScriptRoot -Parent
 Set-Location $raiz
-$IMAGEN = "cumulonimbus:latest"
 
 function Clave { -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ }) }
 
-Write-Host "`n1. Construyendo la imagen $IMAGEN ..." -ForegroundColor Cyan
-docker build -t $IMAGEN .
-if ($LASTEXITCODE) { throw "Falló docker build" }
+# Aplica un manifiesto cambiando la imagen de ejemplo (cumulonimbus:latest) por la versión que se despliega.
+function AplicarConImagen($archivo) {
+  (Get-Content $archivo -Raw) -replace 'image: cumulonimbus:latest', "image: $Imagen" | kubectl apply -f -
+  if ($LASTEXITCODE) { throw "Falló kubectl apply de $archivo" }
+}
+
+if (-not $Imagen) {
+  $version = "sha-" + (git rev-parse --short=7 HEAD)
+  $Imagen = if ($Acr) { "$Acr.azurecr.io/cumulonimbus:$version" } else { "cumulonimbus:$version" }
+  Write-Host "`n1. Construyendo la imagen $Imagen ..." -ForegroundColor Cyan
+  docker build -t $Imagen .
+  if ($LASTEXITCODE) { throw "Falló docker build" }
+  if ($Acr) {
+    az acr login --name $Acr
+    docker push $Imagen
+    if ($LASTEXITCODE) { throw "Falló docker push al ACR" }
+  }
+} else {
+  Write-Host "`n1. Usando la imagen ya publicada $Imagen" -ForegroundColor Cyan
+}
 
 Write-Host "`n2. Namespaces y configuración ..." -ForegroundColor Cyan
 kubectl apply -f k8s/00-namespace.yaml -f k8s/monitoreo/00-namespace.yaml
@@ -29,39 +57,39 @@ if (-not (kubectl get secret cumulonimbus-secretos -n cumulonimbus --ignore-not-
     --from-literal=DATABASE_URL="postgresql+psycopg://lluvia_app:$pg@postgres:5432/lluvia_bogota"
 } else { Write-Host "   cumulonimbus-secretos ya existe" }
 if (-not (kubectl get secret grafana-admin -n monitoreo --ignore-not-found -o name)) {
-  $gf = Clave
-  kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=$gf
-  Write-Host "   Grafana: usuario admin / contraseña $gf  (guárdala; también: kubectl get secret grafana-admin -n monitoreo -o jsonpath='{.data.admin-password}')" -ForegroundColor Yellow
+  kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=(Clave)
+  Write-Host "   Grafana: usuario admin. Contraseña: ver README · Kubernetes y monitoreo" -ForegroundColor Yellow
 } else { Write-Host "   grafana-admin ya existe" }
 
 Write-Host "`n4. PostgreSQL ..." -ForegroundColor Cyan
 kubectl apply -f k8s/10-postgres.yaml
-kubectl rollout status statefulset/postgres -n cumulonimbus --timeout=180s
+kubectl rollout status statefulset/postgres -n cumulonimbus --timeout=300s
 
 Write-Host "`n5. Migraciones (Job) ..." -ForegroundColor Cyan
 kubectl delete job migraciones -n cumulonimbus --ignore-not-found
-kubectl apply -f k8s/20-migraciones-job.yaml
-kubectl wait --for=condition=complete job/migraciones -n cumulonimbus --timeout=180s
+AplicarConImagen k8s/20-migraciones-job.yaml
+kubectl wait --for=condition=complete job/migraciones -n cumulonimbus --timeout=300s
 
-Write-Host "`n6. metrics-server (lo necesita el autoescalado) ..." -ForegroundColor Cyan
-kubectl apply -f k8s/extras/metrics-server.yaml
+if (-not $SinMetricsServer) {
+  Write-Host "`n6. metrics-server (lo necesita el autoescalado) ..." -ForegroundColor Cyan
+  kubectl apply -f k8s/extras/metrics-server.yaml
+}
 
 Write-Host "`n7. API (2 réplicas), recolector y autoescalado ..." -ForegroundColor Cyan
-kubectl apply -f k8s/30-api.yaml -f k8s/31-recolector.yaml -f k8s/40-hpa.yaml
-# Si la imagen cambió, que las réplicas la tomen (el tag :latest no cambia de nombre).
-kubectl rollout restart deployment/api deployment/recolector -n cumulonimbus
-kubectl rollout status deployment/api -n cumulonimbus --timeout=180s
+AplicarConImagen k8s/30-api.yaml
+AplicarConImagen k8s/31-recolector.yaml
+kubectl apply -f k8s/40-hpa.yaml
+kubectl rollout status deployment/api -n cumulonimbus --timeout=300s
 
 Write-Host "`n8. Prometheus y Grafana ..." -ForegroundColor Cyan
 kubectl apply -f k8s/monitoreo/10-prometheus.yaml -f k8s/monitoreo/20-grafana.yaml
+# Para que tomen cambios del ConfigMap (configuración y dashboard) en despliegues repetidos.
 kubectl rollout restart deployment/prometheus deployment/grafana -n monitoreo
-kubectl rollout status deployment/grafana -n monitoreo --timeout=180s
+kubectl rollout status deployment/grafana -n monitoreo --timeout=300s
 
-Write-Host "`nListo:" -ForegroundColor Green
+Write-Host "`nListo. Imagen desplegada: $Imagen" -ForegroundColor Green
 kubectl get pods,svc -n cumulonimbus
 kubectl get pods,svc -n monitoreo
-Write-Host "`n  App:        http://localhost"
-Write-Host "  Métricas:   http://localhost/metrics"
-Write-Host "  Prometheus: http://localhost:9090"
-Write-Host "  Grafana:    http://localhost:3000"
-Write-Host "  Tráfico:    python scripts/trafico.py --segundos 120 --usuarios 20"
+Write-Host "`nEn Docker Desktop: app http://localhost · Prometheus http://localhost:9090 · Grafana http://localhost:3000"
+Write-Host "En AKS: usa la EXTERNAL-IP de cada Service de arriba (api :80, prometheus :9090, grafana :3000)."
+Write-Host "Tráfico: python scripts/trafico.py --url http://<ip-o-localhost> --segundos 150 --usuarios 60"
