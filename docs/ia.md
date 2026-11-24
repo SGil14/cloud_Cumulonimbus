@@ -95,3 +95,43 @@ La división es **por tiempo**, no aleatoria: la prueba es el 20 % más reciente
 ### Pendiente antes de entrenar
 
 - Correr `preparar_datos.py` contra la base real y revisar `resumen.json`: cuántas horas de lecturas continuas hay y qué proporción de ellas tiene lluvia. Si es muy baja, hay que dejar el recolector encendido más tiempo antes de evaluar el modelo.
+
+## 3. Modelo y evaluación (HU-42)
+
+### Qué se entrena
+
+`ml/entrenar.py` compara dos modelos sobre las mismas variables:
+
+| Candidato | Por qué |
+|---|---|
+| Regresión logística (con variables estandarizadas) | Simple, interpretable y rápida: es el punto de partida razonable |
+| Árbol de gradiente (`HistGradientBoostingClassifier`) | Captura relaciones no lineales (por ejemplo, la hora del día) |
+
+Como la lluvia es rara, ambos usan `class_weight="balanced"`.
+
+### Cómo se evalúa (sin hacer trampa)
+
+1. Del entrenamiento se aparta como **validación** el tramo más reciente (con una hora de separación). Con él se elige el modelo (por PR-AUC) y el **umbral de decisión** (el que maximiza F1; con una clase tan rara, 0,5 casi nunca es lo mejor).
+2. El modelo elegido se reentrena con todo el entrenamiento.
+3. Se evalúa **una sola vez** en el conjunto de prueba, junto a la **línea base de persistencia**.
+4. Si el entrenamiento o la prueba tienen menos de 20 ejemplos con lluvia, el script se detiene y lo dice: con tan poca lluvia cualquier métrica sería ruido.
+
+Métricas: precisión, recall y F1 a la altura del umbral; ROC-AUC, PR-AUC y Brier (calidad de la probabilidad) para el modelo. El modelo «supera la línea base» si su F1 en la prueba es mayor que el de la persistencia.
+
+### Reproducir
+
+```bash
+cd ml
+python preparar_datos.py     # datos (sección 2)
+python entrenar.py           # entrena, evalúa y guarda modelo/modelo.joblib y modelo/metricas.json
+pytest                       # pruebas con datos sintéticos
+```
+
+### Resultados
+
+> **Pendiente:** correr `entrenar.py` con los datos reales y pegar aquí `modelo/metricas.json`. Las pruebas automáticas usan datos sintéticos y solo verifican que el procedimiento funciona; **no son resultados del modelo**.
+
+| | Precisión | Recall | F1 |
+|---|---|---|---|
+| Línea base (persistencia) | – | – | – |
+| Modelo | – | – | – |

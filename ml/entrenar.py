@@ -1,0 +1,169 @@
+"""Entrena y evalúa el modelo de predicción de lluvia en la próxima hora.
+
+Uso (después de `python preparar_datos.py`):
+    python entrenar.py
+
+Qué hace:
+1. Aparta el tramo más reciente del entrenamiento como validación y con él elige entre los candidatos
+   y el umbral de decisión. La prueba no se toca en ese paso.
+2. Reentrena el candidato elegido con todo el entrenamiento.
+3. Evalúa UNA vez en la prueba, junto a la línea base de persistencia, y guarda el modelo y las métricas
+   en `modelo/` (modelo.joblib y metricas.json).
+"""
+
+import argparse
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+
+from datos import ETIQUETA, LINEA_BASE, VARIABLES
+
+AQUI = Path(__file__).resolve().parent
+DATOS = AQUI / "data"
+MODELO = AQUI / "modelo"
+SEMILLA = 42
+FRACCION_VALIDACION = 0.2
+MIN_POSITIVOS = 20  # con menos lluvia que esto, cualquier métrica sería ruido
+
+
+def candidatos() -> dict:
+    return {
+        "regresion_logistica": make_pipeline(
+            StandardScaler(), LogisticRegression(class_weight="balanced", max_iter=1000, random_state=SEMILLA)
+        ),
+        "arbol_de_gradiente": HistGradientBoostingClassifier(
+            max_depth=3, learning_rate=0.1, max_iter=150, class_weight="balanced", random_state=SEMILLA
+        ),
+    }
+
+
+def metricas_binarias(real: pd.Series, predicho: np.ndarray) -> dict:
+    return {
+        "precision": round(float(precision_score(real, predicho, zero_division=0)), 4),
+        "recall": round(float(recall_score(real, predicho, zero_division=0)), 4),
+        "f1": round(float(f1_score(real, predicho, zero_division=0)), 4),
+    }
+
+
+def mejor_umbral(real: pd.Series, probabilidad: np.ndarray) -> float:
+    """El umbral que maximiza F1 en validación (la lluvia es rara: 0.5 casi nunca es lo mejor)."""
+    umbrales = np.linspace(0.05, 0.95, 91)
+    puntajes = [f1_score(real, probabilidad >= u, zero_division=0) for u in umbrales]
+    return round(float(umbrales[int(np.argmax(puntajes))]), 2)
+
+
+def validar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame) -> None:
+    for nombre, df in (("entrenamiento", entrenamiento), ("prueba", prueba)):
+        if df.empty:
+            raise ValueError(f"El conjunto de {nombre} está vacío.")
+        if int(df[ETIQUETA].sum()) < MIN_POSITIVOS or df[ETIQUETA].nunique() < 2:
+            raise ValueError(
+                f"El conjunto de {nombre} tiene muy pocos ejemplos con lluvia "
+                f"({int(df[ETIQUETA].sum())}, se necesitan al menos {MIN_POSITIVOS}). "
+                "Hace falta más histórico con lluvia antes de evaluar el modelo."
+            )
+
+
+def entrenar_y_evaluar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
+    """Devuelve (modelo, umbral, métricas)."""
+    validar(entrenamiento, prueba)
+
+    entrenamiento = entrenamiento.sort_values("fin")
+    instantes = np.sort(entrenamiento["fin"].unique())
+    corte = instantes[int(len(instantes) * (1 - FRACCION_VALIDACION))]
+    hueco = pd.Timedelta(hours=1)  # igual que en la división principal: la etiqueta mira una hora adelante
+    interno = entrenamiento[entrenamiento["fin"] < corte - hueco]
+    validacion = entrenamiento[entrenamiento["fin"] >= corte]
+    if interno[ETIQUETA].nunique() < 2 or validacion[ETIQUETA].nunique() < 2:
+        raise ValueError("La validación no tiene lluvia y no-lluvia a la vez; hace falta más histórico.")
+
+    # --- 1. Elegir candidato y umbral con la validación ---
+    en_validacion = {}
+    for nombre, modelo in candidatos().items():
+        modelo.fit(interno[VARIABLES], interno[ETIQUETA])
+        prob = modelo.predict_proba(validacion[VARIABLES])[:, 1]
+        en_validacion[nombre] = {
+            "pr_auc": round(float(average_precision_score(validacion[ETIQUETA], prob)), 4),
+            "umbral": mejor_umbral(validacion[ETIQUETA], prob),
+        }
+    elegido = max(en_validacion, key=lambda n: en_validacion[n]["pr_auc"])
+    umbral = en_validacion[elegido]["umbral"]
+
+    # --- 2. Reentrenar con todo el entrenamiento ---
+    modelo = candidatos()[elegido]
+    modelo.fit(entrenamiento[VARIABLES], entrenamiento[ETIQUETA])
+
+    # --- 3. Evaluar una sola vez en la prueba ---
+    prob = modelo.predict_proba(prueba[VARIABLES])[:, 1]
+    real = prueba[ETIQUETA]
+    del_modelo = metricas_binarias(real, prob >= umbral)
+    de_la_base = metricas_binarias(real, prueba[LINEA_BASE].to_numpy())
+    del_modelo.update(
+        roc_auc=round(float(roc_auc_score(real, prob)), 4),
+        pr_auc=round(float(average_precision_score(real, prob)), 4),
+        brier=round(float(brier_score_loss(real, prob)), 4),
+    )
+    metricas = {
+        "entrenado_en": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "modelo": elegido,
+        "umbral": umbral,
+        "variables": VARIABLES,
+        "validacion": en_validacion,
+        "prueba": {
+            "filas": int(len(prueba)),
+            "tasa_lluvia": round(float(real.mean()), 4),
+            "modelo": del_modelo,
+            "linea_base_persistencia": de_la_base,
+            "mejora_f1": round(del_modelo["f1"] - de_la_base["f1"], 4),
+            "supera_linea_base": bool(del_modelo["f1"] > de_la_base["f1"]),
+        },
+        "entrenamiento": {"filas": int(len(entrenamiento)), "tasa_lluvia": round(float(entrenamiento[ETIQUETA].mean()), 4)},
+    }
+    return modelo, umbral, metricas
+
+
+def guardar(modelo, umbral: float, metricas: dict, carpeta: Path = MODELO) -> None:
+    carpeta.mkdir(parents=True, exist_ok=True)
+    joblib.dump({"modelo": modelo, "umbral": umbral, "variables": VARIABLES}, carpeta / "modelo.joblib")
+    (carpeta / "metricas.json").write_text(json.dumps(metricas, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--datos", type=Path, default=DATOS)
+    p.add_argument("--salida", type=Path, default=MODELO)
+    a = p.parse_args()
+
+    try:
+        entrenamiento = pd.read_csv(a.datos / "entrenamiento.csv", parse_dates=["fin"])
+        prueba = pd.read_csv(a.datos / "prueba.csv", parse_dates=["fin"])
+    except FileNotFoundError:
+        sys.exit("No hay datos preparados. Corre primero: python preparar_datos.py")
+    try:
+        modelo, umbral, metricas = entrenar_y_evaluar(entrenamiento, prueba)
+    except ValueError as e:
+        sys.exit(str(e))
+    guardar(modelo, umbral, metricas, a.salida)
+    print(json.dumps(metricas["prueba"], indent=2, ensure_ascii=False))
+    print(f"\nModelo: {metricas['modelo']} · umbral {umbral} · guardado en {a.salida}")
+
+
+if __name__ == "__main__":
+    main()
