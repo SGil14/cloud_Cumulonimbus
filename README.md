@@ -27,11 +27,12 @@
 15. [Pruebas](#pruebas)
 16. [Despliegue en Azure](#despliegue-en-azure)
 17. [Kubernetes y monitoreo](#kubernetes-y-monitoreo)
-18. [Límites que debes conocer](#límites-que-debes-conocer)
-19. [Solución de problemas](#solución-de-problemas)
-20. [Mejoras futuras](#mejoras-futuras)
-21. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-22. [Enlaces importantes](#enlaces-importantes)
+18. [Construir, desplegar y correr todo el stack](#construir-desplegar-y-correr-todo-el-stack)
+19. [Límites que debes conocer](#límites-que-debes-conocer)
+20. [Solución de problemas](#solución-de-problemas)
+21. [Mejoras futuras](#mejoras-futuras)
+22. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+23. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -1204,6 +1205,98 @@ El guion paso a paso de la sustentación está en [`docs/demo-kubernetes.md`](do
 
 ---
 
+## Construir, desplegar y correr todo el stack
+
+Guía de punta a punta del Proyecto 3: de la imagen al clúster, con monitoreo y la funcionalidad de IA. Los detalles de cada pieza están en las secciones enlazadas.
+
+```mermaid
+flowchart LR
+    COD["Código<br/>backend + frontend"] -->|docker build| IMG["Imagen<br/>cumulonimbus:sha-…"]
+    IMG -->|push| REG["Registro<br/>GHCR o ACR"]
+    REG --> K8S["Clúster<br/>Docker Desktop o AKS"]
+    K8S --> API["API + recolector<br/>+ PostgreSQL"]
+    API -->|/metrics| PROM["Prometheus"] --> GRAF["Grafana"]
+    ML["ml/<br/>datos y modelo"] -.->|IA| API
+```
+
+### 1. Construir la imagen
+
+Una sola imagen contiene el backend y el frontend compilado (el `Dockerfile` usa dos etapas). Desde la raíz:
+
+```bash
+docker build -t cumulonimbus:local .
+docker run --rm -p 8000:8000 -e DATABASE_URL=... -e JWT_SECRET_KEY=... cumulonimbus:local
+```
+
+Para probar con una base de datos ya lista, `docker compose up --build` levanta la app y PostgreSQL juntos (ver [Instalación y Uso](#instalación-y-uso); define `POSTGRES_PASSWORD` y `JWT_SECRET_KEY` en el `.env`).
+
+### 2. Publicar la imagen
+
+| Registro | Cómo |
+|---|---|
+| **GitHub Container Registry** | Automático: cada fusión a `main` publica `ghcr.io/sgil14/cloud_cumulonimbus:sha-<commit>` y `:latest` ([pipeline](#imagen-versionada-y-pipeline-github-actions)). |
+| **Azure Container Registry (ACR)** | `k8s-desplegar.ps1 -Acr <nombre>` construye la imagen, la etiqueta con el commit y la sube. A mano: `az acr login --name <acr>`, `docker tag cumulonimbus:local <acr>.azurecr.io/cumulonimbus:v1`, `docker push <acr>.azurecr.io/cumulonimbus:v1`. |
+
+Cada despliegue usa una etiqueta con versión, nunca solo `latest`, para poder volver atrás.
+
+### 3. Desplegar en el clúster
+
+```powershell
+# Clúster local (Docker Desktop con Kubernetes activado)
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
+
+# AKS en Azure (crea antes el clúster con scripts/aks-crear.ps1)
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+```
+
+El script aplica los manifiestos de [`k8s/`](k8s/) en este orden: namespaces y ConfigMap → **Secrets** (contraseña de PostgreSQL, `DATABASE_URL`, **llave JWT** y admin de Grafana, generados al azar la primera vez) → PostgreSQL → Job de **migraciones** → API (2 réplicas) y recolector → HPA → Prometheus y Grafana. Se puede correr las veces que haga falta. Para comprobar:
+
+```powershell
+kubectl get pods,svc -n cumulonimbus
+kubectl get pods,svc -n monitoreo
+```
+
+Detalle de cada manifiesto, decisiones y límites de Azure for Students: [Kubernetes y monitoreo](#kubernetes-y-monitoreo).
+
+### 4. Levantar el stack de monitoreo
+
+Prometheus y Grafana se despliegan con el mismo script (namespace `monitoreo`). Para verlos:
+
+| Qué | Cómo |
+|---|---|
+| Métricas crudas de la API | `http://<IP de la app>/metrics` |
+| Prometheus | `kubectl port-forward svc/prometheus 9090:9090 -n monitoreo` → http://localhost:9090 |
+| **Grafana y su dashboard** | `http://<IP de Grafana>:3000` (usuario `admin`; contraseña en el Secret `grafana-admin`, ver el comando en [Kubernetes y monitoreo](#kubernetes-y-monitoreo)) |
+
+El dashboard «Cumulonimbus» (7 paneles) y la fuente de datos de Prometheus vienen ya cargados desde [`k8s/monitoreo/20-grafana.yaml`](k8s/monitoreo/20-grafana.yaml). Para ver las gráficas moverse, genera carga con `python scripts/trafico.py --segundos 150 --usuarios 60`.
+
+### 5. La funcionalidad de IA
+
+La predicción de lluvia a corto plazo se documenta en [`docs/ia.md`](docs/ia.md): decisión, datos, modelo y evaluación frente a la línea base. El código está en [`ml/`](ml/):
+
+```bash
+cd ml
+pip install -r requirements.txt
+python preparar_datos.py     # arma entrenamiento.csv y prueba.csv desde la tabla `lecturas`
+python entrenar.py           # entrena, evalúa y guarda el modelo
+```
+
+### 6. Dónde está cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Manifiestos de Kubernetes | [`k8s/`](k8s/) |
+| Secret de ejemplo (sin valores reales) | [`k8s/secret.example.yaml`](k8s/secret.example.yaml) |
+| Dashboards de Grafana | [`k8s/monitoreo/20-grafana.yaml`](k8s/monitoreo/20-grafana.yaml) |
+| Scripts de despliegue y de carga | [`scripts/`](scripts/) |
+| Pipeline de CI/CD | [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) |
+| IA: decisión, datos y modelo | [`docs/ia.md`](docs/ia.md) y [`ml/`](ml/) |
+| Guion de la demo de Kubernetes | [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md) |
+| Guion de la demo del contexto y la autenticación | [`docs/demo-autenticacion.md`](docs/demo-autenticacion.md) |
+| Autenticación y roles | [Autenticación y roles](#autenticación-y-roles) |
+
+---
+
 ## Límites que debes conocer
 
 Para no engañarte con lo que muestra la app:
@@ -1255,7 +1348,7 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
 | ⏳ | Revisar el error 502 del radar en Azure |
 | ⏳ | «Mi ubicación» como origen en el atajo de ruta |
-| ⏳ | GitHub Actions: integración continua y despliegue automático |
+| ✅ | GitHub Actions: integración continua, publicación de la imagen y despliegue en AKS |
 | ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
 
 ---
