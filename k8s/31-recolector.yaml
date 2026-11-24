@@ -1,0 +1,47 @@
+# Recolector del histórico: la misma imagen, con RECOLECTOR_ACTIVO=true y 1 sola réplica.
+# Así el SAB se consulta una vez cada 5 minutos aunque la API tenga 2 o más réplicas.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recolector
+  namespace: cumulonimbus
+  labels:
+    app: cumulonimbus-recolector
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # nunca dos recolectores a la vez
+  selector:
+    matchLabels:
+      app: cumulonimbus-recolector
+  template:
+    metadata:
+      labels:
+        app: cumulonimbus-recolector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: recolector
+          image: cumulonimbus:latest
+          imagePullPolicy: IfNotPresent
+          workingDir: /app/backend
+          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: cumulonimbus-config }
+            - secretRef: { name: cumulonimbus-secretos }
+          env:
+            - name: RECOLECTOR_ACTIVO   # sobrescribe el "false" del ConfigMap
+              value: "true"
+          livenessProbe:
+            httpGet: { path: /api/health/live, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests: { cpu: 50m, memory: 192Mi }
+            limits: { cpu: 300m, memory: 384Mi }

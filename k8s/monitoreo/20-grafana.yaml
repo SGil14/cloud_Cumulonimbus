@@ -1,0 +1,200 @@
+# Grafana con la fuente de datos (Prometheus) y el dashboard de Cumulonimbus ya cargados.
+# Entra en http://localhost:3000 con el usuario y la contraseña del Secret "grafana-admin".
+
+# --- Fuente de datos: el Prometheus del namespace monitoreo ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-fuentes
+  namespace: monitoreo
+data:
+  prometheus.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus.monitoreo.svc:9090
+        isDefault: true
+---
+# --- Dónde buscar dashboards ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-proveedor-dashboards
+  namespace: monitoreo
+data:
+  cumulonimbus.yaml: |
+    apiVersion: 1
+    providers:
+      - name: cumulonimbus
+        folder: Cumulonimbus
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+---
+# --- El dashboard (JSON de Grafana) ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-cumulonimbus
+  namespace: monitoreo
+data:
+  cumulonimbus.json: |
+    {
+      "uid": "cumulonimbus",
+      "title": "Cumulonimbus · API en Kubernetes",
+      "timezone": "America/Bogota",
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "schemaVersion": 39,
+      "panels": [
+        {
+          "id": 1, "type": "timeseries", "title": "Throughput · peticiones por segundo",
+          "description": "Peticiones atendidas por todas las réplicas de la API, por ruta.",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 9 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+          "targets": [
+            { "refId": "A", "legendFormat": "{{ruta}}",
+              "expr": "sum by (ruta) (rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))" },
+            { "refId": "B", "legendFormat": "total",
+              "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))" }
+          ]
+        },
+        {
+          "id": 2, "type": "timeseries", "title": "Latencia · p50 y p95",
+          "description": "Tiempo de respuesta de la API (percentiles 50 y 95).",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+          "targets": [
+            { "refId": "A", "legendFormat": "p95",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))" },
+            { "refId": "B", "legendFormat": "p50",
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))" }
+          ]
+        },
+        {
+          "id": 3, "type": "stat", "title": "Estaciones con lluvia ahora",
+          "description": "Gauge cumulonimbus_estaciones_lloviendo: estaciones del SAB que registran lluvia en la última consulta.",
+          "gridPos": { "x": 0, "y": 9, "w": 6, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null }, { "color": "blue", "value": 1 }, { "color": "orange", "value": 10 }, { "color": "red", "value": 30 } ] } }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+          "targets": [ { "refId": "A", "expr": "max(cumulonimbus_estaciones_lloviendo)" } ]
+        },
+        {
+          "id": 4, "type": "stat", "title": "Réplicas de la API arriba",
+          "description": "Pods de la API que Prometheus logra consultar.",
+          "gridPos": { "x": 6, "y": 9, "w": 6, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+          "targets": [ { "refId": "A", "expr": "sum(up{componente=\"cumulonimbus-api\"})" } ]
+        },
+        {
+          "id": 5, "type": "timeseries", "title": "Peticiones en curso por réplica",
+          "description": "Gauge cumulonimbus_http_requests_in_progress: muestra cómo se reparte la carga entre pods.",
+          "gridPos": { "x": 12, "y": 9, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+          "targets": [ { "refId": "A", "legendFormat": "{{pod}}",
+            "expr": "sum by (pod) (cumulonimbus_http_requests_in_progress{componente=\"cumulonimbus-api\"})" } ]
+        },
+        {
+          "id": 6, "type": "timeseries", "title": "Errores · % de respuestas 5xx",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0 }, "overrides": [] },
+          "targets": [ { "refId": "A", "legendFormat": "5xx",
+            "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\",estado=~\"5..\"}[1m])) / clamp_min(sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m])), 1e-9)" } ]
+        },
+        {
+          "id": 7, "type": "timeseries", "title": "SAB · tiempo de respuesta (p95) y consultas",
+          "description": "Cuánto tarda el servicio del IDIGER y cuántas veces se le consulta (la caché de 90 s las limita).",
+          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 7 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [
+            { "matcher": { "id": "byName", "options": "consultas/min" }, "properties": [ { "id": "unit", "value": "short" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+          "targets": [
+            { "refId": "A", "legendFormat": "p95",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_sab_duracion_seconds_bucket[5m])))" },
+            { "refId": "B", "legendFormat": "consultas/min",
+              "expr": "sum(rate(cumulonimbus_sab_consultas_total[5m])) * 60" }
+          ]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoreo
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.3.1
+          ports:
+            - name: web
+              containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom: { secretKeyRef: { name: grafana-admin, key: admin-user } }
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom: { secretKeyRef: { name: grafana-admin, key: admin-password } }
+            - name: GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+              value: /var/lib/grafana/dashboards/cumulonimbus.json
+            - name: GF_USERS_DEFAULT_THEME
+              value: light
+          readinessProbe:
+            httpGet: { path: /api/health, port: web }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: web }
+            initialDelaySeconds: 30
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 300m, memory: 384Mi }
+          volumeMounts:
+            - name: fuentes
+              mountPath: /etc/grafana/provisioning/datasources
+            - name: proveedor
+              mountPath: /etc/grafana/provisioning/dashboards
+            - name: dashboard
+              mountPath: /var/lib/grafana/dashboards
+      volumes:
+        - name: fuentes
+          configMap: { name: grafana-fuentes }
+        - name: proveedor
+          configMap: { name: grafana-proveedor-dashboards }
+        - name: dashboard
+          configMap: { name: grafana-dashboard-cumulonimbus }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoreo
+spec:
+  type: LoadBalancer   # Docker Desktop: http://localhost:3000
+  selector:
+    app: grafana
+  ports:
+    - name: web
+      port: 3000
+      targetPort: web

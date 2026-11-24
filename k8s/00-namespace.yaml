@@ -1,0 +1,10 @@
+# Todo Cumulonimbus vive en su propio namespace: se puede ver con
+#   kubectl get all -n cumulonimbus
+# y borrar entero con
+#   kubectl delete namespace cumulonimbus
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cumulonimbus
+  labels:
+    app.kubernetes.io/part-of: cumulonimbus

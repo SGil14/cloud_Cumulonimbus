@@ -5,10 +5,12 @@ saturar el SAB cuando varias personas usan la app al mismo tiempo.
 """
 
 import logging
+import time
 from dataclasses import dataclass
 from datetime import datetime
 
 from app.config import get_settings
+from app.core import metricas
 from app.core.cache import CacheTTL
 from app.core.tiempo import ahora_bogota
 from app.db.session import SessionLocal
@@ -27,7 +29,15 @@ class Snapshot:
 
 
 def _cargar_desde_sab() -> Snapshot:
-    snapshot = Snapshot(obtenido_en=ahora_bogota(), estaciones=sab_client.obtener_pluviometros())
+    inicio = time.perf_counter()
+    try:
+        crudas = sab_client.obtener_pluviometros()
+    except Exception:
+        metricas.SAB_CONSULTAS.labels("error").inc()
+        raise
+    metricas.SAB_LATENCIA.observe(time.perf_counter() - inicio)
+    metricas.SAB_CONSULTAS.labels("ok").inc()
+    snapshot = Snapshot(obtenido_en=ahora_bogota(), estaciones=crudas)
     try:
         with SessionLocal() as db:
             nuevas = lecturas_repo.guardar_snapshot(db, snapshot.estaciones)
@@ -49,4 +59,7 @@ def obtener_estaciones(forzar: bool = False) -> tuple[datetime, list[Estacion]]:
     snapshot = obtener_snapshot(forzar)
     minutos = get_settings().minutos_lectura_vieja
     ahora = ahora_bogota()
-    return snapshot.obtenido_en, [a_estacion(e, ahora, minutos) for e in snapshot.estaciones]
+    estaciones = [a_estacion(e, ahora, minutos) for e in snapshot.estaciones]
+    metricas.ESTACIONES_TOTAL.set(len(estaciones))
+    metricas.ESTACIONES_LLOVIENDO.set(sum(1 for e in estaciones if e.lloviendo))
+    return snapshot.obtenido_en, estaciones

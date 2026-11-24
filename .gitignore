@@ -20,3 +20,6 @@ Thumbs.db
 # Copia del primer diseño del front (para poder volver)
 _respaldo_diseno_v1/
 frontend/_respaldo_diseno_v1/
+
+# Kubernetes: el Secret real nunca se sube (usar k8s/secret.example.yaml)
+k8s/secret.yaml
