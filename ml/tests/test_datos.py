@@ -152,3 +152,11 @@ def test_preparar_de_punta_a_punta():
 def test_sin_datos_suficientes_devuelve_vacio():
     entrenamiento, prueba = datos.preparar(serie_de_prueba(horas=1), ESTACIONES)
     assert entrenamiento.empty and prueba.empty
+
+
+def test_la_division_acepta_una_fecha_de_corte():
+    ej = ejemplos_de(serie_de_prueba(horas=12, lluvia_desde=6))
+    corte = pd.Timestamp("2026-10-14 14:00")
+    entrenamiento, prueba = datos.dividir_en_el_tiempo(ej, corte=corte)
+    assert prueba["fin"].min() >= corte
+    assert entrenamiento["fin"].max() < corte - pd.Timedelta(hours=1) + pd.Timedelta(minutes=1)
