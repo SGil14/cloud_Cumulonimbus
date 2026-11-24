@@ -1040,10 +1040,41 @@ kubectl delete namespace cumulonimbus monitoreo   # borrar todo
 - **PostgreSQL dentro del clúster**: StatefulSet con volumen, para que el entorno sea autocontenido y gratis. En la nube se puede cambiar por el PostgreSQL gestionado de Azure cambiando solo `DATABASE_URL` en el Secret.
 - **Prometheus y Grafana con manifiestos propios**: todo queda versionado y comentado en `k8s/monitoreo/`, sin depender de Helm.
 
-### Pendiente
+### Imagen versionada y pipeline (GitHub Actions)
 
-- Publicar la imagen versionada en un registro (ACR o GitHub Container Registry) y usar esa etiqueta en los manifiestos.
-- Pipeline de GitHub Actions.
+`.github/workflows/ci-cd.yml`:
+
+| Cuándo | Qué hace |
+|---|---|
+| Pull Request hacia `main` | Corre las 56 pruebas del backend y construye la imagen (backend + frontend) sin publicarla |
+| Fusión a `main` | Además **publica la imagen en GitHub Container Registry**: `ghcr.io/sgil14/cloud_cumulonimbus:sha-<commit>` y `:latest` |
+| Etiqueta `vX.Y.Z` | Publica también `:vX.Y.Z` |
+| Fusión a `main` con AKS configurado | Copia la imagen al ACR y actualiza la API y el recolector del clúster |
+
+No usa contraseñas guardadas para publicar: el `GITHUB_TOKEN` de Actions basta. El script de despliegue también etiqueta cada imagen con el commit (`cumulonimbus:sha-<commit>`), así cada despliegue tiene versión y se puede volver atrás.
+
+Para que el pipeline despliegue en AKS hay que configurar en el repositorio (*Settings → Secrets and variables → Actions*):
+- Variables: `AKS_NOMBRE`, `AKS_GRUPO`, `ACR_NOMBRE`.
+- Secreto: `AZURE_CREDENTIALS`, el JSON de una entidad de servicio con rol *Colaborador* sobre el grupo del clúster (`az ad sp create-for-rbac --role contributor --scopes <id-del-grupo> --json-auth`).
+
+Sin esas variables, el pipeline solo prueba, construye y publica.
+
+### En Azure (AKS)
+
+Los mismos manifiestos sirven en AKS. El clúster se crea en la suscripción del equipo con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\aks-crear.ps1 -Suscripcion "<id o nombre de la suscripción>"
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+```
+
+`aks-crear.ps1` crea el grupo `rg-cumulonimbus-k8s`, un **ACR** y un **AKS** (plan gratuito, 1 nodo `Standard_B2s`), y conecta el ACR al clúster con identidad administrada, **sin usuario ni contraseña**. Después `k8s-desplegar.ps1 -Acr` construye la imagen, la sube al ACR con su versión y despliega todo. AKS ya trae metrics-server. Las IP públicas salen en `kubectl get svc`.
+
+Para no gastar crédito: `az aks stop -g rg-cumulonimbus-k8s -n aks-cumulonimbus` (y `az aks start` antes de la demo).
+
+### Demo
+
+El guion paso a paso de la sustentación está en [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md).
 
 ---
 
