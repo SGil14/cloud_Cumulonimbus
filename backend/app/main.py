@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import atajo, atajo_ruta, destino, health, historial, lluvia, mapa, radar, ruta
 from app.config import RAIZ_PROYECTO, get_settings
+from app.core.metricas import MetricasMiddleware, endpoint_metricas
 from app.jobs.recolector import crear_recolector
 from app.services.sab_client import SABError
 
@@ -45,6 +46,8 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+# Mide cada petición (throughput, latencia, en curso) para Prometheus.
+app.add_middleware(MetricasMiddleware)
 
 
 @app.exception_handler(SABError)
@@ -55,6 +58,7 @@ async def sab_no_disponible(request: Request, exc: SABError):
     )
 
 
+app.add_api_route("/metrics", endpoint_metricas, include_in_schema=False)
 app.include_router(health.router)
 app.include_router(lluvia.router)
 app.include_router(destino.router)

@@ -1,0 +1,74 @@
+# La API de Cumulonimbus (FastAPI). También entrega el frontend ya compilado.
+# 2 réplicas detrás de un Service; Prometheus las descubre por las anotaciones prometheus.io/*.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: cumulonimbus
+  labels:
+    app: cumulonimbus-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cumulonimbus-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0   # al actualizar, nunca se queda sin réplicas atendiendo
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: cumulonimbus-api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: api
+          # Imagen construida desde el Dockerfile del repositorio (ver README · Kubernetes).
+          image: cumulonimbus:latest
+          imagePullPolicy: IfNotPresent
+          workingDir: /app/backend
+          # Solo levanta la API: las migraciones las hace el Job 20-migraciones-job.yaml.
+          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef: { name: cumulonimbus-config }
+            - secretRef: { name: cumulonimbus-secretos }
+          # ¿Puede recibir tráfico? Solo si llega a PostgreSQL.
+          readinessProbe:
+            httpGet: { path: /api/health/ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          # ¿Está vivo el proceso? Si deja de responder, Kubernetes reinicia el contenedor.
+          livenessProbe:
+            httpGet: { path: /api/health/live, port: http }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests: { cpu: 100m, memory: 192Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+---
+# Service tipo LoadBalancer: en Docker Desktop queda publicado en http://localhost
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: cumulonimbus
+  labels:
+    app: cumulonimbus-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: cumulonimbus-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

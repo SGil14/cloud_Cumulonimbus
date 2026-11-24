@@ -1,0 +1,23 @@
+# Configuración NO sensible de la app (lo mismo que el .env, sin contraseñas).
+# Las credenciales van en el Secret "cumulonimbus-secretos" (ver secret.example.yaml).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cumulonimbus-config
+  namespace: cumulonimbus
+data:
+  LOG_LEVEL: "INFO"
+  CACHE_ESTACIONES_SEGUNDOS: "90"
+  MINUTOS_LECTURA_VIEJA: "30"
+  ESTACIONES_CERCANAS: "3"
+  RECOLECTOR_INTERVALO_MINUTOS: "5"
+  # La API tiene varias réplicas: el recolector va APAGADO en ellas y corre en su propio
+  # Deployment de 1 réplica (31-recolector.yaml), para no consultar el SAB varias veces.
+  RECOLECTOR_ACTIVO: "false"
+  # El frontend lo sirve la misma API, así que no hace falta abrir CORS a otros orígenes.
+  CORS_ORIGINS: '["http://localhost"]'
+  # Datos de conexión de PostgreSQL (la contraseña va en el Secret).
+  POSTGRES_DB: "lluvia_bogota"
+  POSTGRES_USER: "lluvia_app"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"

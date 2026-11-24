@@ -25,11 +25,12 @@
 13. [Estructura del proyecto](#estructura-del-proyecto)
 14. [Pruebas](#pruebas)
 15. [Despliegue en Azure](#despliegue-en-azure)
-16. [Límites que debes conocer](#límites-que-debes-conocer)
-17. [Solución de problemas](#solución-de-problemas)
-18. [Mejoras futuras](#mejoras-futuras)
-19. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-20. [Enlaces importantes](#enlaces-importantes)
+16. [Kubernetes y monitoreo](#kubernetes-y-monitoreo)
+17. [Límites que debes conocer](#límites-que-debes-conocer)
+18. [Solución de problemas](#solución-de-problemas)
+19. [Mejoras futuras](#mejoras-futuras)
+20. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+21. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -925,6 +926,162 @@ PostgreSQL B1ms ≈ 16 USD al mes (cobra las 24 horas), Container Registry Basic
 - **CI/CD:** el despliegue automático con GitHub Actions está pendiente; hoy se despliega con el script.
 
 El `Dockerfile` sirve igual en otros proveedores: basta con definir `DATABASE_URL` y dejar el recolector activo en **una sola** instancia.
+
+---
+
+## Kubernetes y monitoreo
+
+Proyecto 3. La app corre en un clúster de **Kubernetes** con **Prometheus** y **Grafana** dentro del mismo clúster. Probado en el Kubernetes de **Docker Desktop** (clúster local, permitido por el enunciado y sin costo).
+
+### Qué se despliega
+
+```mermaid
+flowchart LR
+    U["Navegador<br/>http://localhost"] --> SVC["Service api<br/>(LoadBalancer :80)"]
+    subgraph NS1["namespace cumulonimbus"]
+        SVC --> A1["Pod api #1"]
+        SVC --> A2["Pod api #2"]
+        HPA["HPA<br/>2 a 6 réplicas por CPU"] -.-> A1
+        REC["Pod recolector<br/>(1 réplica)"]
+        JOB["Job migraciones<br/>alembic upgrade head"]
+        PG[("StatefulSet postgres<br/>+ volumen 2 Gi")]
+        A1 --> PG
+        A2 --> PG
+        REC --> PG
+        JOB --> PG
+    end
+    subgraph NS2["namespace monitoreo"]
+        PROM["Prometheus :9090"] -->|/metrics cada 10 s| A1
+        PROM --> A2
+        PROM --> REC
+        GRAF["Grafana :3000<br/>dashboard Cumulonimbus"] --> PROM
+    end
+```
+
+| Archivo | Qué crea |
+|---|---|
+| `k8s/00-namespace.yaml` | Namespace `cumulonimbus` |
+| `k8s/01-configmap.yaml` | **ConfigMap** con la configuración no sensible (recolector apagado en la API) |
+| `k8s/secret.example.yaml` | Ejemplo del **Secret** (`DATABASE_URL`, `POSTGRES_PASSWORD`, admin de Grafana). El real nunca se sube (`k8s/secret.yaml` está en `.gitignore`) |
+| `k8s/10-postgres.yaml` | PostgreSQL 17 como **StatefulSet** con volumen persistente y Service headless |
+| `k8s/20-migraciones-job.yaml` | **Job** que aplica las migraciones una sola vez por despliegue |
+| `k8s/30-api.yaml` | **Deployment de la API con 2 réplicas**, probes de *readiness* (`/api/health/ready`) y *liveness* (`/api/health/live`), `requests`/`limits`, y **Service** LoadBalancer |
+| `k8s/31-recolector.yaml` | El recolector en su propio Deployment de **1 réplica**, para no consultar el SAB varias veces |
+| `k8s/40-hpa.yaml` | **HorizontalPodAutoscaler**: de 2 a 6 réplicas cuando la CPU pasa del 50 % |
+| `k8s/extras/metrics-server.yaml` | metrics-server oficial (lo necesita el HPA), con `--kubelet-insecure-tls` solo para Docker Desktop |
+| `k8s/monitoreo/10-prometheus.yaml` | Prometheus con permisos (RBAC) para descubrir los pods anotados con `prometheus.io/scrape: "true"` |
+| `k8s/monitoreo/20-grafana.yaml` | Grafana con la fuente de datos y el dashboard ya cargados |
+
+### Métricas de la API (`/metrics`)
+
+| Métrica | Tipo | Qué mide |
+|---|---|---|
+| `cumulonimbus_http_requests_total{metodo,ruta,estado}` | Counter | Peticiones atendidas (throughput) |
+| `cumulonimbus_http_request_duration_seconds` | Histogram | Latencia de la API |
+| `cumulonimbus_http_requests_in_progress` | Gauge | Peticiones en curso por réplica |
+| `cumulonimbus_estaciones_lloviendo` | Gauge | Estaciones del SAB que registran lluvia |
+| `cumulonimbus_estaciones_total` | Gauge | Estaciones recibidas en la última consulta |
+| `cumulonimbus_sab_consultas_total{resultado}` | Counter | Consultas al SAB (ok o error) |
+| `cumulonimbus_sab_duracion_seconds` | Histogram | Tiempo de respuesta del SAB |
+
+La etiqueta `ruta` usa la plantilla de la ruta (`/api/historial/serie`), no la URL completa, para no crear una serie por cada búsqueda. `/metrics` y los sondeos de salud no se cuentan.
+
+**Dashboard de Grafana** (7 paneles): throughput por ruta, latencia p50 y p95, estaciones con lluvia, réplicas arriba, peticiones en curso por réplica, % de errores 5xx y tiempo de respuesta del SAB.
+
+### Desplegar
+
+Requisitos: Docker Desktop con **Kubernetes activado** (Settings → Kubernetes → Enable) y `kubectl` apuntando a `docker-desktop`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
+```
+
+El script construye la imagen, crea los Secrets con contraseñas aleatorias (solo la primera vez), levanta PostgreSQL, corre las migraciones, despliega la API, el recolector, el HPA, metrics-server, Prometheus y Grafana, y al final muestra `kubectl get pods,svc`. Se puede correr las veces que sea.
+
+| Qué | Dónde |
+|---|---|
+| App | http://localhost |
+| Métricas | http://localhost/metrics |
+| Prometheus | `kubectl port-forward svc/prometheus 9090:9090 -n monitoreo` y luego http://localhost:9090 (solo es accesible dentro del clúster) |
+| Grafana | http://localhost:3000 (usuario `admin`) |
+
+Contraseña de Grafana:
+
+```powershell
+[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String((kubectl get secret grafana-admin -n monitoreo -o jsonpath='{.data.admin-password}')))
+```
+
+### Generar tráfico y ver el autoescalado
+
+```powershell
+python scripts/trafico.py --segundos 150 --usuarios 60
+kubectl get hpa -n cumulonimbus -w
+```
+
+El script solo usa la librería estándar de Python y mezcla los endpoints más usados (más algunos 404). En la prueba, con 60 usuarios la CPU llegó al 65 % y el HPA subió la API **de 2 a 3 réplicas** en menos de un minuto, sin errores; al terminar el tráfico vuelve a 2.
+
+### Comandos útiles
+
+```powershell
+kubectl get pods,svc -n cumulonimbus          # lo que pide la sustentación
+kubectl get pods,svc -n monitoreo
+kubectl top pods -n cumulonimbus              # CPU y memoria por pod
+kubectl logs deploy/recolector -n cumulonimbus --tail 20
+kubectl delete namespace cumulonimbus monitoreo   # borrar todo
+```
+
+### Decisiones
+
+- **Recolector separado**: la API tiene varias réplicas; si cada una recolectara, el SAB recibiría varias consultas cada 5 minutos. Va en su propio Deployment de 1 réplica con estrategia `Recreate`.
+- **Migraciones en un Job**: así las réplicas no corren `alembic upgrade` al mismo tiempo.
+- **Liveness sin base de datos**: si PostgreSQL se cae, Kubernetes no reinicia las réplicas sin necesidad; la *readiness* sí la revisa y las saca del balanceo.
+- **PostgreSQL dentro del clúster**: StatefulSet con volumen, para que el entorno sea autocontenido y gratis. En la nube se puede cambiar por el PostgreSQL gestionado de Azure cambiando solo `DATABASE_URL` en el Secret.
+- **Prometheus y Grafana con manifiestos propios**: todo queda versionado y comentado en `k8s/monitoreo/`, sin depender de Helm.
+
+### Imagen versionada y pipeline (GitHub Actions)
+
+`.github/workflows/ci-cd.yml`:
+
+| Cuándo | Qué hace |
+|---|---|
+| Pull Request hacia `main` | Corre las 56 pruebas del backend y construye la imagen (backend + frontend) sin publicarla |
+| Fusión a `main` | Además **publica la imagen en GitHub Container Registry**: `ghcr.io/sgil14/cloud_cumulonimbus:sha-<commit>` y `:latest` |
+| Etiqueta `vX.Y.Z` | Publica también `:vX.Y.Z` |
+| Fusión a `main` con AKS configurado | Copia la imagen al ACR y actualiza la API y el recolector del clúster |
+
+No usa contraseñas guardadas para publicar: el `GITHUB_TOKEN` de Actions basta. El script de despliegue también etiqueta cada imagen con el commit (`cumulonimbus:sha-<commit>`), así cada despliegue tiene versión y se puede volver atrás.
+
+Para que el pipeline despliegue en AKS hay que configurar en el repositorio (*Settings → Secrets and variables → Actions*):
+- Variables: `AKS_NOMBRE`, `AKS_GRUPO`, `ACR_NOMBRE`.
+- Secreto: `AZURE_CREDENTIALS`, el JSON de una entidad de servicio con rol *Colaborador* sobre el grupo del clúster (`az ad sp create-for-rbac --role contributor --scopes <id-del-grupo> --json-auth`).
+
+Sin esas variables, el pipeline solo prueba, construye y publica.
+
+### En Azure (AKS)
+
+Los mismos manifiestos sirven en AKS. El clúster se crea en la suscripción del equipo con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\aks-crear.ps1 -Suscripcion "<id o nombre de la suscripción>"
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+```
+
+`aks-crear.ps1` crea el grupo `rg-cumulonimbus-k8s`, un **ACR** y un **AKS** (plan gratuito, 1 nodo `Standard_D2s_v3`: 2 vCPU y 8 GiB), y conecta el ACR al clúster con identidad administrada, **sin usuario ni contraseña**. Después `k8s-desplegar.ps1 -Acr` construye la imagen, la sube al ACR con su versión y despliega todo. AKS ya trae metrics-server. Las IP públicas salen en `kubectl get svc`.
+
+Para no gastar crédito: `az aks stop -g rg-cumulonimbus-k8s -n aks-cumulonimbus` (y `az aks start` antes de la demo).
+
+Probado en la suscripción *Azure for Students* del equipo (24/11/2026): la app quedó en una IP pública del Service `api`, Grafana en la del Service `grafana` (puerto 3000), y la imagen sale del ACR con versión (`acrcumulonimbusk8se1d4.azurecr.io/cumulonimbus:sha-...`). Con `scripts/trafico.py --usuarios 80` el HPA subió la API de 2 a 6 réplicas y atendió 15.214 peticiones sin errores.
+
+Límites de *Azure for Students* que obligaron a ajustar el despliegue:
+
+| Límite | Efecto | Solución |
+|---|---|---|
+| Solo algunos tamaños de máquina, y varios con cuota 0 (Bs, Dalsv7) | El nodo nunca se creaba y AKS quedaba en «Creating» | `Standard_D2s_v3` (familia DSv3, con cuota) |
+| Máximo 3 IP públicas | AKS usa una para su salida, la API otra y Grafana otra | Prometheus es `ClusterIP`: Grafana lo consulta por dentro y se ve con `kubectl port-forward` |
+
+### Demo
+
+El guion paso a paso de la sustentación está en [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md).
 
 ---
 

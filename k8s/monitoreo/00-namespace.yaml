@@ -1,0 +1,7 @@
+# Prometheus y Grafana corren en su propio namespace, separados de la app.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoreo
+  labels:
+    app.kubernetes.io/part-of: cumulonimbus

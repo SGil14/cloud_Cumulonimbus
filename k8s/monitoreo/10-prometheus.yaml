@@ -1,0 +1,135 @@
+# Prometheus: guarda las métricas que exponen los pods en /metrics.
+# Descubre solo los pods que tienen la anotación prometheus.io/scrape: "true" (la API y el recolector).
+
+# --- Permisos: Prometheus necesita listar los pods del clúster para encontrarlos ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoreo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-cumulonimbus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-cumulonimbus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-cumulonimbus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: monitoreo
+---
+# --- Configuración de Prometheus ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoreo
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 10s       # cada cuánto pregunta a cada pod
+      evaluation_interval: 10s
+    scrape_configs:
+      - job_name: cumulonimbus
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [cumulonimbus]
+        relabel_configs:
+          # Solo los pods con prometheus.io/scrape: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          # Ruta de las métricas (prometheus.io/path)
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          # Puerto de las métricas (prometheus.io/port)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          # Etiquetas útiles en Grafana: qué pod y qué componente (api o recolector)
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: componente
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: monitoreo
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.55.1
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=7d
+          ports:
+            - name: web
+              containerPort: 9090
+          readinessProbe:
+            httpGet: { path: /-/ready, port: web }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /-/healthy, port: web }
+            initialDelaySeconds: 15
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 768Mi }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: datos
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: datos
+          emptyDir: {}   # las métricas se pierden si el pod se reinicia; suficiente para la demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoreo
+spec:
+  # Solo dentro del clúster: Grafana lo consulta por http://prometheus.monitoreo.svc:9090.
+  # Para verlo desde el PC:  kubectl port-forward svc/prometheus 9090:9090 -n monitoreo
+  type: ClusterIP
+  selector:
+    app: prometheus
+  ports:
+    - name: web
+      port: 9090
+      targetPort: web
