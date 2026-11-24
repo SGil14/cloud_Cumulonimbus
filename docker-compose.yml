@@ -32,6 +32,9 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://lluvia_app:${POSTGRES_PASSWORD}@db:5432/lluvia_bogota
       RECOLECTOR_ACTIVO: "true"
+      # Llave de firma de los tokens de inicio de sesión (define JWT_SECRET_KEY en el .env).
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
+      ADMIN_CORREO: ${ADMIN_CORREO:-}
     ports:
       - "8000:8000"
 

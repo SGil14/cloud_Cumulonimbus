@@ -54,8 +54,18 @@ if (-not (kubectl get secret cumulonimbus-secretos -n cumulonimbus --ignore-not-
   $pg = Clave
   kubectl create secret generic cumulonimbus-secretos -n cumulonimbus `
     --from-literal=POSTGRES_PASSWORD=$pg `
-    --from-literal=DATABASE_URL="postgresql+psycopg://lluvia_app:$pg@postgres:5432/lluvia_bogota"
+    --from-literal=DATABASE_URL="postgresql+psycopg://lluvia_app:$pg@postgres:5432/lluvia_bogota" `
+    --from-literal=JWT_SECRET_KEY="$(Clave)$(Clave)"
 } else { Write-Host "   cumulonimbus-secretos ya existe" }
+# Un Secret creado antes de la autenticación no tiene la llave de firma de los tokens: se le agrega.
+if (-not (kubectl get secret cumulonimbus-secretos -n cumulonimbus -o jsonpath="{.data.JWT_SECRET_KEY}")) {
+  Write-Host "   agregando JWT_SECRET_KEY al Secret existente"
+  $parche = Join-Path $env:TEMP "parche-jwt.json"
+  '{"stringData":{"JWT_SECRET_KEY":"' + (Clave) + (Clave) + '"}}' | Set-Content -Path $parche -Encoding ascii
+  kubectl patch secret cumulonimbus-secretos -n cumulonimbus --type merge --patch-file $parche
+  Remove-Item $parche -Force
+  if ($LASTEXITCODE) { throw "No se pudo agregar JWT_SECRET_KEY al Secret" }
+}
 if (-not (kubectl get secret grafana-admin -n monitoreo --ignore-not-found -o name)) {
   $gf = Clave
   kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=$gf
