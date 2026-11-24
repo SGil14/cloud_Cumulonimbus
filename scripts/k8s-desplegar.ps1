@@ -22,15 +22,13 @@ kubectl apply -f k8s/00-namespace.yaml -f k8s/monitoreo/00-namespace.yaml
 kubectl apply -f k8s/01-configmap.yaml
 
 Write-Host "`n3. Secrets (solo si no existen) ..." -ForegroundColor Cyan
-kubectl get secret cumulonimbus-secretos -n cumulonimbus *> $null
-if ($LASTEXITCODE) {
+if (-not (kubectl get secret cumulonimbus-secretos -n cumulonimbus --ignore-not-found -o name)) {
   $pg = Clave
   kubectl create secret generic cumulonimbus-secretos -n cumulonimbus `
     --from-literal=POSTGRES_PASSWORD=$pg `
     --from-literal=DATABASE_URL="postgresql+psycopg://lluvia_app:$pg@postgres:5432/lluvia_bogota"
 } else { Write-Host "   cumulonimbus-secretos ya existe" }
-kubectl get secret grafana-admin -n monitoreo *> $null
-if ($LASTEXITCODE) {
+if (-not (kubectl get secret grafana-admin -n monitoreo --ignore-not-found -o name)) {
   $gf = Clave
   kubectl create secret generic grafana-admin -n monitoreo --from-literal=admin-user=admin --from-literal=admin-password=$gf
   Write-Host "   Grafana: usuario admin / contraseña $gf  (guárdala; también: kubectl get secret grafana-admin -n monitoreo -o jsonpath='{.data.admin-password}')" -ForegroundColor Yellow
@@ -45,13 +43,16 @@ kubectl delete job migraciones -n cumulonimbus --ignore-not-found
 kubectl apply -f k8s/20-migraciones-job.yaml
 kubectl wait --for=condition=complete job/migraciones -n cumulonimbus --timeout=180s
 
-Write-Host "`n6. API (2 réplicas), recolector y autoescalado ..." -ForegroundColor Cyan
+Write-Host "`n6. metrics-server (lo necesita el autoescalado) ..." -ForegroundColor Cyan
+kubectl apply -f k8s/extras/metrics-server.yaml
+
+Write-Host "`n7. API (2 réplicas), recolector y autoescalado ..." -ForegroundColor Cyan
 kubectl apply -f k8s/30-api.yaml -f k8s/31-recolector.yaml -f k8s/40-hpa.yaml
 # Si la imagen cambió, que las réplicas la tomen (el tag :latest no cambia de nombre).
 kubectl rollout restart deployment/api deployment/recolector -n cumulonimbus
 kubectl rollout status deployment/api -n cumulonimbus --timeout=180s
 
-Write-Host "`n7. Prometheus y Grafana ..." -ForegroundColor Cyan
+Write-Host "`n8. Prometheus y Grafana ..." -ForegroundColor Cyan
 kubectl apply -f k8s/monitoreo/10-prometheus.yaml -f k8s/monitoreo/20-grafana.yaml
 kubectl rollout restart deployment/prometheus deployment/grafana -n monitoreo
 kubectl rollout status deployment/grafana -n monitoreo --timeout=180s
