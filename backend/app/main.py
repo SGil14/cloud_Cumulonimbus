@@ -8,7 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import admin, atajo, atajo_ruta, auth, destino, health, historial, lluvia, mapa, radar, ruta
+from app.api.routes import (
+    admin, atajo, atajo_ruta, auth, destino, favoritos, health, historial, lluvia, mapa, radar, ruta,
+)
 from app.config import RAIZ_PROYECTO, get_settings
 from app.core.metricas import MetricasMiddleware, endpoint_metricas
 from app.jobs.recolector import crear_recolector
@@ -69,6 +71,7 @@ app.include_router(radar.router)
 app.include_router(historial.router)
 app.include_router(ruta.router)
 app.include_router(auth.router)
+app.include_router(favoritos.router)
 app.include_router(admin.router)
 
 # En producción el backend también entrega el front compilado.
