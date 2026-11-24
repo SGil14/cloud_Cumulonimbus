@@ -85,6 +85,7 @@ def main() -> None:
     else:
         lecturas, estaciones = leer_de_base_de_datos()
 
+    sintetico = bool(args.lecturas) and args.lecturas.name.startswith("sintetico")
     entrenamiento, prueba = preparar(lecturas, estaciones, args.prueba, args.corte)
     if entrenamiento.empty or prueba.empty:
         sys.exit(
@@ -96,6 +97,9 @@ def main() -> None:
     entrenamiento.to_csv(args.salida / "entrenamiento.csv", index=False)
     prueba.to_csv(args.salida / "prueba.csv", index=False)
     datos = resumen(lecturas, entrenamiento, prueba)
+    datos["sintetico"] = sintetico
+    if sintetico:
+        print("AVISO: datos sintéticos. Sirven para probar y demostrar, no para evaluar el modelo.", file=sys.stderr)
     (args.salida / "resumen.json").write_text(json.dumps(datos, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(datos, indent=2, ensure_ascii=False))
 

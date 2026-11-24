@@ -174,11 +174,18 @@ def main() -> None:
         prueba = pd.read_csv(a.datos / "prueba.csv", parse_dates=["fin"])
     except FileNotFoundError:
         sys.exit("No hay datos preparados. Corre primero: python preparar_datos.py")
+    resumen = a.datos / "resumen.json"
+    sintetico = resumen.is_file() and json.loads(resumen.read_text(encoding="utf-8")).get("sintetico", False)
+    if sintetico and a.salida.resolve() == MODELO.resolve():
+        sys.exit("Estos datos son sintéticos: no se guarda el modelo en modelo/. Usa --salida modelo_demo para una demostración.")
     try:
         modelo, umbral, metricas = entrenar_y_evaluar(entrenamiento, prueba)
     except ValueError as e:
         sys.exit(str(e))
+    metricas["sintetico"] = sintetico
     guardar(modelo, umbral, metricas, a.salida)
+    if sintetico:
+        print("DEMO CON DATOS SINTÉTICOS: estas métricas no son evidencia del modelo real.")
     print(json.dumps(metricas["prueba"], indent=2, ensure_ascii=False))
     print(f"\nModelo: {metricas['modelo']} · umbral {umbral} · guardado en {a.salida}")
 

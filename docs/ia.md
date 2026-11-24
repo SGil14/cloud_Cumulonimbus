@@ -155,3 +155,25 @@ Diagnóstico (no se usó para elegir el modelo, solo para entender el resultado)
 En ambos sentidos la PR-AUC queda por encima de la tasa de lluvia (lo que daría el azar), así que hay algo de señal. Pero un modelo que aprende de una tormenta fuerte no generaliza a una llovizna, y viceversa: con un solo evento de cada tipo no hay cómo aprender las dos situaciones.
 
 **Qué haría falta:** más días con lluvia de intensidades distintas (dejar el recolector encendido durante la temporada de lluvias) y volver a correr `entrenar.py`. Mientras tanto, la línea base de persistencia es la respuesta honesta de la app.
+
+### Intento con datos abiertos del IDEAM (descartado)
+
+Para sumar más eventos de lluvia se revisó el dataset abierto «Precipitación» del IDEAM (`s54a-sgyg` en datos.gov.co, licencia CC BY-SA 4.0). Tiene estaciones de Bogotá (muchas de FOPAE, antecesor del IDIGER) con datos de 2004 a 2019 cada 10 minutos, y los registros con lluvia se descargan sin problema. Pero la API (Socrata) no responde a consultas por rango de fechas: seis intentos seguidos agotaron el tiempo (unos 170 s cada uno), y los momentos secos son tan necesarios como los lluviosos para entrenar. **Reconstruir los ceros que faltan sería inventar datos**, así que se descartó. Una descarga completa del dataset queda como opción futura.
+
+### Datos sintéticos (solo para pruebas y demostración)
+
+`ml/simulador.py` genera lluvia **sintética**: tormentas que cruzan la ciudad con una estación de partida, una dirección, un tamaño y una intensidad. Sirve para probar que el pipeline funciona de punta a punta y para demostrar el sistema (por ejemplo, el panel de Grafana de la IA).
+
+```bash
+python simulador.py --estaciones ../dataset/estaciones.csv --dias 20
+python preparar_datos.py --lecturas data/sintetico_lecturas.csv --estaciones data/sintetico_estaciones.csv
+python entrenar.py --salida modelo_demo
+```
+
+Reglas para que nunca se confundan con datos reales:
+- Los archivos empiezan con `sintetico_` y se acompañan de `sintetico_LEEME.txt`.
+- `preparar_datos.py` marca `"sintetico": true` en `resumen.json` y avisa por pantalla.
+- `entrenar.py` **se niega a guardar un modelo sintético en `modelo/`**; solo en otra carpeta (`modelo_demo/`, que no se versiona), y marca sus métricas como sintéticas.
+- **Las métricas obtenidas con datos sintéticos no son evidencia del modelo.** La evaluación que cuenta es la de la sección anterior, con datos reales del SAB.
+
+Aun con datos sintéticos, el modelo no supera la persistencia en F1 (0,39 frente a 0,41) aunque sí discrimina bien (ROC-AUC 0,86): la lluvia es muy rara (1 %) y «si llueve ahora, lloverá» es una base fuerte. No se ajustó el simulador para que el modelo gane.
