@@ -1,6 +1,6 @@
 import type {
   Destino, EstacionesRespuesta, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Radar,
-  RankingHistorial, Resumen, RutaRespuesta, SerieHistorial,
+  Prediccion, RankingHistorial, Resumen, RutaRespuesta, SerieHistorial,
 } from "./types";
 
 export class ApiError extends Error {}
@@ -32,6 +32,8 @@ export const api = {
     pedir<SerieHistorial>(`/api/historial/serie?periodo=${periodo}${localidad ? `&localidad=${encodeURIComponent(localidad)}` : ""}`, senal),
   historialRanking: (periodo: Periodo, senal?: AbortSignal) =>
     pedir<RankingHistorial>(`/api/historial/ranking?periodo=${periodo}`, senal),
+  prediccion: (lat: number, lon: number, senal?: AbortSignal) =>
+    pedir<Prediccion>(`/api/prediccion?lat=${lat}&lon=${lon}`, senal),
   historialDestino: (lat: number, lon: number, periodo: Periodo, senal?: AbortSignal) =>
     pedir<HistorialDestino>(`/api/historial/destino?lat=${lat}&lon=${lon}&periodo=${periodo}`, senal),
 };
