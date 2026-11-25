@@ -156,8 +156,13 @@ def construir_ejemplos(pasos: pd.DataFrame, vecinas: dict[int, list[int]]) -> pd
     return filas[["id_sensor", "fin", *VARIABLES, LINEA_BASE, ETIQUETA]].sort_values(["fin", "id_sensor"]).reset_index(drop=True)
 
 
-def dividir_en_el_tiempo(ejemplos: pd.DataFrame, fraccion_prueba: float = 0.2) -> tuple[pd.DataFrame, pd.DataFrame]:
+def dividir_en_el_tiempo(
+    ejemplos: pd.DataFrame, fraccion_prueba: float = 0.2, corte: pd.Timestamp | None = None
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Separa entrenamiento y prueba por fecha: la prueba son siempre los instantes más recientes.
+
+    Por defecto la prueba es la fracción más reciente. Con `corte` (hora de Bogotá, sin zona) la prueba empieza
+    en esa fecha; sirve cuando la lluvia es escasa y hay que garantizar que ambos lados tengan eventos.
 
     Entre ambos conjuntos se deja una hora sin usar: la etiqueta mira una hora al futuro y, sin ese hueco,
     los últimos ejemplos de entrenamiento compartirían lluvia con los primeros de prueba.
@@ -166,17 +171,19 @@ def dividir_en_el_tiempo(ejemplos: pd.DataFrame, fraccion_prueba: float = 0.2) -
         raise ValueError("fraccion_prueba debe estar entre 0 y 1")
     if ejemplos.empty:
         return ejemplos.copy(), ejemplos.copy()
-    instantes = np.sort(ejemplos["fin"].unique())
-    corte = instantes[int(len(instantes) * (1 - fraccion_prueba))]
+    if corte is None:
+        instantes = np.sort(ejemplos["fin"].unique())
+        corte = instantes[int(len(instantes) * (1 - fraccion_prueba))]
+    corte = pd.Timestamp(corte)
     hueco = pd.Timedelta(minutes=PASO_MIN * PASOS_FUTURO)
     entrenamiento = ejemplos[ejemplos["fin"] < corte - hueco]
     prueba = ejemplos[ejemplos["fin"] >= corte]
     return entrenamiento.reset_index(drop=True), prueba.reset_index(drop=True)
 
 
-def preparar(lecturas: pd.DataFrame, estaciones: pd.DataFrame, fraccion_prueba: float = 0.2):
+def preparar(lecturas: pd.DataFrame, estaciones: pd.DataFrame, fraccion_prueba: float = 0.2, corte=None):
     """De las tablas crudas a (entrenamiento, prueba)."""
     df = limpiar_lecturas(lecturas)
     pasos = a_pasos(lluvia_por_lectura(df))
     ejemplos = construir_ejemplos(pasos, estaciones_vecinas(estaciones))
-    return dividir_en_el_tiempo(ejemplos, fraccion_prueba)
+    return dividir_en_el_tiempo(ejemplos, fraccion_prueba, corte)

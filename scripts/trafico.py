@@ -27,6 +27,8 @@ RUTAS = [
     (8, "/api/historial/serie?periodo=24h"),
     (6, "/api/historial/ranking?periodo=7d"),
     (5, "/api/historial/serie?periodo=6h"),
+    (7, "/api/prediccion?lat=4.6486&lon=-74.0628"),
+    (5, "/api/prediccion?lat=4.7110&lon=-74.0721"),
     (5, "/"),
     (3, "/api/no-existe"),
 ]

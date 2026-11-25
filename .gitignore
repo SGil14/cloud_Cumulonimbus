@@ -26,3 +26,7 @@ frontend/_respaldo_diseno_v1/
 
 # Kubernetes: el Secret real nunca se sube (usar k8s/secret.example.yaml)
 k8s/secret.yaml
+
+# Datos y modelos de demostración (sintéticos)
+ml/modelo_demo/
+ml/modelo/*.joblib

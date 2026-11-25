@@ -74,6 +74,7 @@ def main() -> None:
     p.add_argument("--lecturas", type=Path, help="CSV con id_sensor, fecha_lectura, acumulado_dia")
     p.add_argument("--estaciones", type=Path, help="CSV con id_sensor, latitud, longitud")
     p.add_argument("--prueba", type=float, default=0.2, help="fracción más reciente que se reserva para la prueba")
+    p.add_argument("--corte", help="fecha (AAAA-MM-DD, hora de Bogotá) desde la que empieza la prueba; reemplaza a --prueba")
     p.add_argument("--salida", type=Path, default=SALIDA)
     args = p.parse_args()
 
@@ -84,7 +85,8 @@ def main() -> None:
     else:
         lecturas, estaciones = leer_de_base_de_datos()
 
-    entrenamiento, prueba = preparar(lecturas, estaciones, args.prueba)
+    sintetico = bool(args.lecturas) and args.lecturas.name.startswith("sintetico")
+    entrenamiento, prueba = preparar(lecturas, estaciones, args.prueba, args.corte)
     if entrenamiento.empty or prueba.empty:
         sys.exit(
             "No hay suficientes datos continuos para armar los conjuntos. "
@@ -95,6 +97,9 @@ def main() -> None:
     entrenamiento.to_csv(args.salida / "entrenamiento.csv", index=False)
     prueba.to_csv(args.salida / "prueba.csv", index=False)
     datos = resumen(lecturas, entrenamiento, prueba)
+    datos["sintetico"] = sintetico
+    if sintetico:
+        print("AVISO: datos sintéticos. Sirven para probar y demostrar, no para evaluar el modelo.", file=sys.stderr)
     (args.salida / "resumen.json").write_text(json.dumps(datos, indent=2, ensure_ascii=False), encoding="utf-8")
     print(json.dumps(datos, indent=2, ensure_ascii=False))
 
