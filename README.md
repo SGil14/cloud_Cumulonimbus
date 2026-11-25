@@ -26,11 +26,12 @@
 14. [Pruebas](#pruebas)
 15. [Despliegue en Azure](#despliegue-en-azure)
 16. [Kubernetes y monitoreo](#kubernetes-y-monitoreo)
-17. [Límites que debes conocer](#límites-que-debes-conocer)
-18. [Solución de problemas](#solución-de-problemas)
-19. [Mejoras futuras](#mejoras-futuras)
-20. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-21. [Enlaces importantes](#enlaces-importantes)
+17. [Inteligencia artificial](#inteligencia-artificial)
+18. [Límites que debes conocer](#límites-que-debes-conocer)
+19. [Solución de problemas](#solución-de-problemas)
+20. [Mejoras futuras](#mejoras-futuras)
+21. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+22. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -598,6 +599,7 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/historial/destino?lat=&lon=&periodo=` | Cuándo llovió cerca de un punto (las 3 estaciones más cercanas). |
 | `GET /api/atajo?q=` | Una frase en texto plano que dice si llueve en un destino; pensada para el atajo de iPhone. |
 | `GET /api/atajo/ruta?origen=&destino=&modo=` | Una **tarjeta HTML** con mapa que dice si llueve en una ruta (con `lat=` y `lon=` en lugar de `origen=` usa la ubicación del teléfono; con `formato=texto` devuelve texto con emojis). |
+| `GET /api/prediccion?lat=&lon=` | Probabilidad de lluvia en la próxima hora cerca de un punto, con el método usado (`modelo` o `persistencia`). Ver [Inteligencia artificial](#inteligencia-artificial). |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
 
@@ -850,9 +852,14 @@ Cumulonimbus/
 │       ├── hooks/                 # Datos, tema, diseño, historial
 │       ├── lib/                   # API, formatos, geometría, lluvia animada, filtro del radar
 │       └── disenos/               # Un CSS por diseño + paletas del mapa
+├── ml/                            # Inteligencia artificial: datos, entrenamiento, evaluación y pruebas
+├── monitoreo/                     # Prometheus y Grafana para docker compose (dashboard en JSON)
+├── k8s/                           # Manifiestos de Kubernetes
+├── scripts/                       # Despliegue en AKS y tráfico de prueba
+├── docs/ia.md                     # La funcionalidad de IA: decisión, datos, modelo, evaluación y límites
 ├── docs/img/                      # Capturas de este README
 ├── Dockerfile                     # Imagen única: backend + frontend compilado
-├── docker-compose.yml             # La app y su PostgreSQL juntos
+├── docker-compose.yml             # La app, su PostgreSQL, Prometheus y Grafana
 ├── .dockerignore
 ├── Abrir Cumulonimbus.bat            # Un clic: compila el frontend si falta y abre la app
 ├── .env.example                   # Plantilla de configuración
@@ -870,7 +877,7 @@ cd backend
 .venv\Scripts\python -m pytest
 ```
 
-Hay **56 pruebas** que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta y el radar. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
+Hay **80 pruebas** del backend que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta, el radar, la predicción de lluvia y la coherencia del dashboard de Grafana con las métricas de la API. La carpeta `ml/` tiene otras **29** (`cd ml && python -m pytest`): preparación de datos, entrenamiento, simulador y una prueba de que la API calcula las variables igual que el entrenamiento. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
 
 ---
 
@@ -983,10 +990,24 @@ flowchart LR
 | `cumulonimbus_estaciones_total` | Gauge | Estaciones recibidas en la última consulta |
 | `cumulonimbus_sab_consultas_total{resultado}` | Counter | Consultas al SAB (ok o error) |
 | `cumulonimbus_sab_duracion_seconds` | Histogram | Tiempo de respuesta del SAB |
+| `cumulonimbus_ia_predicciones_total{metodo}` | Counter | Predicciones entregadas (`modelo` o `persistencia`) |
+| `cumulonimbus_ia_prediccion_duracion_seconds` | Histogram | Latencia de la predicción |
+| `cumulonimbus_ia_probabilidad_ultima` | Gauge | Probabilidad de la última predicción del modelo |
 
 La etiqueta `ruta` usa la plantilla de la ruta (`/api/historial/serie`), no la URL completa, para no crear una serie por cada búsqueda. `/metrics` y los sondeos de salud no se cuentan.
 
-**Dashboard de Grafana** (7 paneles): throughput por ruta, latencia p50 y p95, estaciones con lluvia, réplicas arriba, peticiones en curso por réplica, % de errores 5xx y tiempo de respuesta del SAB.
+**Dashboard de Grafana** (11 paneles): throughput por ruta, latencia p50 y p95, estaciones con lluvia, réplicas arriba, peticiones en curso por réplica, % de errores 5xx, tiempo de respuesta del SAB y, para la IA, predicciones por minuto y método, latencia de la predicción, predicciones de la última hora y probabilidad de la última predicción. Su JSON está en `monitoreo/grafana/dashboards/cumulonimbus.json` y es el mismo que carga el clúster (una prueba lo verifica).
+
+### Monitoreo con Docker Compose (sin clúster)
+
+`docker compose up --build` levanta la API, PostgreSQL, **Prometheus** y **Grafana**, con todo ya configurado:
+
+1. En el `.env` define `POSTGRES_PASSWORD` y `GRAFANA_PASSWORD`.
+2. `docker compose up --build`
+3. La app: <http://localhost:8000> · Grafana: <http://localhost:3000> (usuario `admin`) · Prometheus: <http://localhost:9090>
+4. Para ver moverse las gráficas: `python scripts/trafico.py --url http://localhost:8000 --segundos 120 --usuarios 20`
+
+Prometheus lee `http://app:8000/metrics` cada 10 segundos (`monitoreo/prometheus.yml`) y Grafana carga la fuente de datos y el dashboard sin pasos manuales (`monitoreo/grafana/provisioning/`).
 
 ### Desplegar
 
@@ -1082,6 +1103,28 @@ Límites de *Azure for Students* que obligaron a ajustar el despliegue:
 ### Demo
 
 El guion paso a paso de la sustentación está en [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md).
+
+---
+
+## Inteligencia artificial
+
+**Qué hace:** estima la probabilidad de que llueva en la **próxima hora** cerca de un destino. Aparece en el resultado de una búsqueda, bajo «Próxima hora», y está en `GET /api/prediccion?lat=&lon=`.
+
+**Cómo:** una regresión logística (scikit-learn, comparada con un árbol de gradiente) entrenada con lecturas reales de las 71 estaciones del SAB. Usa la lluvia de la estación en los últimos 10, 30 y 60 minutos, la de sus 3 estaciones vecinas, el acumulado del día y la hora. El modelo se publica como un JSON de unos números (`backend/app/ia/modelo.json`), así que la API lo evalúa sin instalar scikit-learn.
+
+**Respaldo:** si no hay modelo, no hay una hora de lecturas continuas guardadas cerca o la base de datos falla, la API responde con la regla «si llueve ahora, seguirá lloviendo» y dice por qué. El campo `metodo` siempre indica cuál se usó.
+
+**Honestidad sobre los resultados:** con los datos disponibles (solo dos eventos de lluvia, del 14 y del 17 de octubre de 2026) el modelo **todavía no supera** a esa regla simple en la prueba (F1 0,17 frente a 0,38). La interfaz lo avisa («estimación experimental»). El detalle, el diagnóstico y lo que haría falta para mejorarlo están en [`docs/ia.md`](docs/ia.md).
+
+```bash
+cd ml
+pip install -r requirements.txt
+python preparar_datos.py --lecturas ../dataset/lecturas.csv --estaciones ../dataset/estaciones.csv --corte 2026-10-17
+python entrenar.py --todo     # evalúa y publica ml/modelo/modelo.json
+# copiar modelo.json y metricas.json a backend/app/ia/
+```
+
+`ml/simulador.py` genera lluvia **sintética** solo para probar y demostrar; sus datos y modelos están marcados y nunca se usan para evaluar.
 
 ---
 

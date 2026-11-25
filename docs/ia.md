@@ -26,9 +26,9 @@ Hoy Cumulonimbus responde **qué está pasando**: dónde llueve ahora, si llueve
 | Se puede mostrar en Grafana (inferencias y latencia) | Sí | Sí | Sí | Sí |
 | Esfuerzo | Medio | Medio | Bajo | Bajo |
 
-### Decisión propuesta
+### Decisión
 
-**Alternativa A: predicción de lluvia a corto plazo.** Es la única que añade información que la app no tiene, se puede evaluar de forma objetiva contra una línea base y no depende de servicios de pago.
+**Alternativa A: predicción de lluvia a corto plazo (aprobada).** Es la única que añade información que la app no tiene, se puede evaluar de forma objetiva contra una línea base y no depende de servicios de pago.
 
 **Línea base de la evaluación:** «persistencia», es decir, predecir que en la próxima hora lloverá si ahora llueve. El modelo solo vale la pena si la supera de forma clara.
 
@@ -38,12 +38,12 @@ Hoy Cumulonimbus responde **qué está pasando**: dónde llueve ahora, si llueve
 > **quiero** saber qué probabilidad hay de que llueva en la próxima hora en mi destino,
 > **para** decidir si salgo ahora, espero o llevo paraguas.
 
-**Criterios de aceptación**
-- [ ] Dado un destino (coordenadas), la API devuelve la probabilidad de lluvia en la próxima hora y las estaciones en las que se basó.
-- [ ] El modelo supera la línea base de persistencia en el conjunto de prueba, con las métricas documentadas.
-- [ ] Si no hay datos suficientes o el modelo no está disponible, la API lo dice con claridad y la app sigue funcionando.
-- [ ] La predicción se ve en la interfaz con estado de carga y de error.
-- [ ] El número de inferencias y su latencia se exponen en `/metrics`.
+**Criterios de aceptación** (estado al 24 de noviembre de 2026)
+- [x] Dado un destino (coordenadas), la API devuelve la probabilidad de lluvia en la próxima hora y las estaciones en las que se basó (`GET /api/prediccion`).
+- [ ] El modelo supera la línea base de persistencia en el conjunto de prueba. **No se cumple todavía**: ver la sección 3. Las métricas sí están documentadas.
+- [x] Si no hay datos suficientes o el modelo no está disponible, la API lo dice con claridad y la app sigue funcionando (respaldo a la persistencia, con el motivo).
+- [x] La predicción se ve en la interfaz con estado de carga y de error.
+- [x] El número de inferencias y su latencia se exponen en `/metrics` y en Grafana.
 
 ### Estado de la aprobación
 
@@ -63,6 +63,8 @@ No se usa `valor_5min`: el acumulado del día es más estable y es lo que ya usa
 cd ml
 pip install -r requirements.txt
 python preparar_datos.py          # lee DATABASE_URL del entorno o del .env de la raíz
+# o, con los datos reales exportados que trae el repositorio (ver dataset/LEEME.md):
+python preparar_datos.py --lecturas ../dataset/lecturas.csv --estaciones ../dataset/estaciones.csv --corte 2026-10-17
 pytest                            # pruebas de la preparación, sin base de datos
 ```
 
@@ -92,9 +94,9 @@ Una estación en un instante `t` (final de un paso de 10 minutos):
 
 La división es **por tiempo**, no aleatoria: la prueba es el 20 % más reciente. Entre entrenamiento y prueba se deja una hora sin usar, porque la etiqueta mira una hora al futuro y sin ese hueco ambos conjuntos compartirían lluvia. Una división aleatoria haría que el modelo viera, al entrenar, instantes pegados a los de la prueba y daría métricas demasiado buenas.
 
-### Pendiente antes de entrenar
+### Los datos que tenemos
 
-- Correr `preparar_datos.py` contra la base real y revisar `resumen.json`: cuántas horas de lecturas continuas hay y qué proporción de ellas tiene lluvia. Si es muy baja, hay que dejar el recolector encendido más tiempo antes de evaluar el modelo.
+`dataset/` (en el repositorio): 34.709 lecturas de 71 estaciones, del 14 al 19 de octubre de 2026, exportadas de la base del recolector. De ahí salen 7.137 ejemplos (estación e instante), de los cuales solo entre el 3 y el 4 % tienen lluvia en la hora siguiente. Hay **dos eventos de lluvia**; eso limita todo lo que sigue.
 
 ## 3. Modelo y evaluación (HU-42)
 
@@ -177,3 +179,44 @@ Reglas para que nunca se confundan con datos reales:
 - **Las métricas obtenidas con datos sintéticos no son evidencia del modelo.** La evaluación que cuenta es la de la sección anterior, con datos reales del SAB.
 
 Aun con datos sintéticos, el modelo no supera la persistencia en F1 (0,39 frente a 0,41) aunque sí discrimina bien (ROC-AUC 0,86): la lluvia es muy rara (1 %) y «si llueve ahora, lloverá» es una base fuerte. No se ajustó el simulador para que el modelo gane.
+
+## 4. Cómo se integra
+
+### API (HU-43)
+
+`GET /api/prediccion?lat=&lon=` busca las 3 estaciones más cercanas al punto, lee de PostgreSQL su última hora de lecturas (con un tiempo máximo de 3 s) y calcula las mismas variables del entrenamiento. Luego evalúa la regresión logística publicada en `backend/app/ia/modelo.json`: solo números, sin scikit-learn en la imagen de Docker.
+
+| Situación | Respuesta |
+|---|---|
+| Hay modelo y una hora de lecturas continuas | `metodo: "modelo"` con la probabilidad |
+| No hay modelo | `metodo: "persistencia"`, motivo «El modelo no está disponible» |
+| Falta histórico (la app estuvo apagada) | `metodo: "persistencia"`, motivo «Todavía no hay una hora de lecturas continuas…» |
+| Falla la base de datos | `metodo: "persistencia"`, motivo «No se pudo consultar el histórico…» |
+| El SAB no responde | 502 con el mensaje habitual de la app |
+
+La respuesta incluye las estaciones en las que se basó, `llueve_ahora`, la evaluación del modelo (F1 del modelo y de la línea base) y un aviso de que es una estimación experimental. Una prueba (`ml/tests/test_paridad.py`) comprueba que la API y el entrenamiento calculan **exactamente** las mismas variables.
+
+### Interfaz (HU-44)
+
+Al buscar un destino, el resultado muestra «Próxima hora» con la probabilidad (barra), el método usado («Modelo de IA · experimental» o «Regla simple»), el motivo del respaldo si lo hay y el aviso. Tiene estado de carga y de error con botón para reintentar.
+
+### Monitoreo (HU-45)
+
+`/metrics` expone `cumulonimbus_ia_predicciones_total{metodo}`, `cumulonimbus_ia_prediccion_duracion_seconds` y `cumulonimbus_ia_probabilidad_ultima`. El dashboard de Grafana tiene 4 paneles de IA y se mueven con `python scripts/trafico.py`.
+
+## 5. Limitaciones y mejoras posibles
+
+**Limitaciones conocidas**
+- **Muy pocos eventos de lluvia** (dos, de tipos distintos). Es la limitación principal: un modelo que aprende de una tormenta fuerte no generaliza a una llovizna.
+- **No supera la línea base** en la prueba (F1 0,17 frente a 0,38). Hoy es una estimación experimental y la interfaz lo dice.
+- La probabilidad no está calibrada: con tan pocos positivos, «30 %» no significa que 3 de cada 10 veces llueva.
+- Mira una hora hacia adelante y solo con lo que ya midieron los pluviómetros: no ve nubes ni el radar, así que no anticipa tormentas que aún no llegan a una estación.
+- Necesita una hora de lecturas continuas; si la app estuvo apagada, responde con la regla simple.
+- Los datos de lluvia son puntuales (71 pluviómetros), no un campo continuo sobre la ciudad.
+
+**Mejoras posibles, en orden de impacto**
+1. Dejar el recolector encendido durante la temporada de lluvias y reentrenar: más eventos es lo que más cambia el resultado.
+2. Sumar datos abiertos del IDEAM (2004 a 2019) con una descarga completa del dataset, ya que su API no sirve para consultas por fecha.
+3. Incluir el radar del IDIGER como variable: permitiría ver la lluvia antes de que llegue a una estación.
+4. Calibrar las probabilidades (por ejemplo, regresión isotónica) cuando haya suficientes positivos.
+5. Evaluar con validación por eventos completos y reportar intervalos de confianza.

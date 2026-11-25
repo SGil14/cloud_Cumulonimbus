@@ -1,0 +1,72 @@
+id_sensor,id_estacion,nombre,id_localidad,localidad,latitud,longitud,tecnologia
+15,1,COLMAC,1,Usaquen,4.8132608056,-74.0314564148,Campbell
+25,2,El Codito,1,Usaquen,4.763457,-74.021772,Campbell
+35,3,Cerro Norte,1,Usaquen,4.7325440142,-74.0187079792,Campbell
+45,4,Colegio Francisco Primero S.S. (IED),12,Barrios Unidos,4.652389,-74.075434,Campbell
+55,5,La Fiscala,5,Usme,4.5360190138,-74.1065359934,Campbell
+65,6,San Francisco Qda. Limas,19,Ciudad Bolivar,4.5623499997,-74.1488690073,Campbell
+75,7,Gran Bretaña,19,Ciudad Bolivar,4.5117,-74.163522,Campbell
+85,8,Colegio Rodolfo Llinás (IED),10,Engativa,4.720124,-74.108288,Campbell
+95,9,Colegio 21 Ángeles (IED),11,Suba,4.749234,-74.08073,Campbell
+105,10,Colegio Carlos Pizarro (IED),7,Bosa,4.63537,-74.205408,Campbell
+115,11,Casas Fiscales Artillería,6,Tunjuelito,4.556439,-74.125173,Campbell
+121,12,FOPAE - IDIGER,10,Engativa,4.674932,-74.113609,Campbell
+412,900,Altos De La Estancia,19,Ciudad Bolivar,4.58074,-74.17828,Motorola
+2001,200,Cerro Cazadores,2,Chapinero,4.6657670136,-74.0286140207,Motorola
+3001,300,La Unión,5,Usme,4.342638986,-74.1838060069,Motorola
+4001,400,UAN Circunvalar,2,Chapinero,4.6354560002,-74.0574640209,Motorola
+5001,500,La Esperanza,5,Usme,4.4491390137,-74.1079249935,Motorola
+6001,600,Pasquilla,19,Ciudad Bolivar,4.4464720136,-74.1548390068,Motorola
+7001,700,Colegio Moralba Suroriental (IED),4,San Cristobal,4.5429439857,-74.080306021,Motorola
+8003,800,Molinos,18,Rafael Uribe Uribe,4.5532220001,-74.107889007,Motorola
+10001,1000,Guadalupe,3,Santa Fe,4.5915690278,-74.0547080072,Motorola
+11001,1100,Colegio Sierra Morena,19,Ciudad Bolivar,4.5745499996,-74.170136021,Motorola
+12001,1200,Quiba,19,Ciudad Bolivar,4.543106014,-74.1560080346,Motorola
+13001,1300,Juan Rey,5,Usme,4.5187220281,-74.0886690072,Motorola
+15001,1500,Doña Juana,19,Ciudad Bolivar,4.5008170143,-74.1373859935,Motorola
+16001,1600,UAN Usme,19,Ciudad Bolivar,4.4815220143,-74.1270830349,Motorola
+17001,1700,San Benito Río Tunjuelo,6,Tunjuelito,4.5636530281,-74.1384500071,Motorola
+19001,1900,Independencia Río Tunjuelo,7,Bosa,4.6192719999,-74.194594007,Motorola
+20001,2000,Paraiso,2,Chapinero,4.6279779865,-74.0587000069,Motorola
+21001,2100,Vitelma,4,San Cristobal,4.5751530142,-74.0717530072,Motorola
+22001,2200,Kennedy,8,Kennedy,4.6110420136,-74.1783329929,Motorola
+200035,20003,Colegio Eduardo Umaña (IED),5,Usme,4.48997,-74.11308,Campbell
+200046,20004,Colegio Gabriel Garcia Márquez (IED),5,Usme,4.50449,-74.09235,Campbell
+200054,20005,Escuela Pedagógica Experimental,1,Usaquen,4.67553,-74.01927,Campbell
+200062,20006,Colegio Ciudad De Villavicencio (IED),5,Usme,4.48706,-74.10213,Campbell
+200070,20007,Colegio Paulo Freire (IED),5,Usme,4.5328,-74.11684,Campbell
+200078,20009,Colegio Ofelia Uribe (IED),5,Usme,4.50643,-74.10251,Campbell
+200086,20010,Colegio Antonio García (IED),19,Ciudad Bolivar,4.545,-74.13944,Campbell
+200094,20011,Colegio El Tesoro De La Cumbre Sede C (IED),19,Ciudad Bolivar,4.53531,-74.14909,Campbell
+200102,20012,Fundación Ana Restrepo Del Corral,1,Usaquen,4.7055,-74.02263,Campbell
+200110,20013,Colegio Los Alpes (IED),4,San Cristobal,4.55257,-74.08373,Campbell
+200118,20014,Colegio El Manantial (IED),4,San Cristobal,4.56144,-74.07482,Campbell
+200126,20015,Colegio Los Pinos (IED),3,Santa Fe,4.58781,-74.06813,Campbell
+200134,20016,Colegio Manuel Elkin Patarroyo (IED),3,Santa Fe,4.61823,-74.06439,Campbell
+200142,20017,Colegio Friedrich Naumann (IED),1,Usaquen,4.74943,-74.02285,Campbell
+200150,20018,Colegio Nueva Zelandia (IED),11,Suba,4.76587,-74.04681,Campbell
+200158,20019,Chicu Río Bogotá,11,Suba,4.75371,-74.12566,Campbell
+200166,20020,La Ramada Río Bogotá,9,Fontibon,4.70288,-74.17725,Campbell
+200174,20021,El Tabaco Río Bogotá,7,Bosa,4.63155,-74.23914,Campbell
+200182,20023,Colegio Alberto Lleras Camargo (IED),11,Suba,4.743304,-74.102293,Campbell
+200190,20024,Colegio Sorrento (Sede B San Rafael) (IED),16,Puente Aranda,4.619586,-74.11322,Campbell
+200212,20025,Colegio La Belleza (IED),4,San Cristobal,4.53059,-74.09244,Campbell
+200220,20026,Colegio Simón Rodríguez Sede C (IED),2,Chapinero,4.6405,-74.05435,Campbell
+200228,20027,Colegio Unión Colombia Sede A (IED),1,Usaquen,4.75947,-74.02752,Campbell
+200236,20028,Colegio Agustín Fernández (IED),1,Usaquen,4.72911,-74.02383,Campbell
+200244,20029,Colegio Inem Francisco De Paula Santander (IED),8,Kennedy,4.624567,-74.15499,Campbell
+200252,20030,Colegio Gustavo Morales Morales (IED),11,Suba,4.716619,-74.0644,Campbell
+200260,20031,Colegio Carlo Federici(IED),9,Fontibon,4.67168,-74.15894,Campbell
+200268,20033,Colegio Magdalena Ortega De Nariño(IED),10,Engativa,4.68664,-74.08296,Campbell
+200276,20032,Colegio La Felicidad(IED),9,Fontibon,4.656,-74.13111,Motorola
+200307,20038,Río Salitre – Carrera 56b,12,Barrios Unidos,4.671118,-74.076453,Campbell
+200337,100,Gravilleras Río Tunjuelo,19,Ciudad Bolivar,4.5333499996,-74.1251280207,Motorola
+200339,20039,Colegio Alemania Unificada,4,San Cristobal,4.555765,-74.09667,Campbell
+200347,20041,Colegio Rafael Uribe Uribe (IED),6,Tunjuelito,4.583176,-74.132461,Campbell
+200355,20040,Colegio La Chucua (IED),8,Kennedy,4.60356,-74.148507,Campbell
+200363,20042,Colegio Gustavo Restrepo (IED),18,Rafael Uribe Uribe,4.575873,-74.106178,Campbell
+200383,20043,La viga,4,San Cristobal,4.56587,-74.03135,Campbell
+200420,20045,NAZARETH,20,Sumapaz,4.17279,-74.14742,Campbell
+200431,20046,Escuela Colombiana de Ingeniería,11,Suba,4.783642,-74.045983,Campbell
+200436,20047,Palomar del Príncipe - IDPC,17,La Candelaria,4.59784,-74.0704,Campbell
+200457,20049,Estadio,13,Teusaquillo,4.6466,-74.07816,Campbell
