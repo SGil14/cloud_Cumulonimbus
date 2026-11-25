@@ -75,3 +75,28 @@ def test_el_umbral_prefiere_el_mejor_f1():
     real = pd.Series([0] * 90 + [1] * 10)
     prob = np.array([0.1] * 90 + [0.2] * 10)  # separable solo con un umbral bajo
     assert 0.1 < entrenar.mejor_umbral(real, prob) <= 0.2
+
+
+def test_el_modelo_exportado_en_json_da_las_mismas_probabilidades():
+    import math
+
+    entrenamiento, prueba = datos.dividir_en_el_tiempo(ejemplos_sinteticos(), 0.2)
+    modelo, umbral, m = entrenar.entrenar_y_evaluar(entrenamiento, prueba)
+    plano = entrenar.exportar_json(modelo, umbral)
+    if m["modelo"] != "regresion_logistica":
+        assert plano is None
+        return
+    esperado = modelo.predict_proba(prueba[datos.VARIABLES])[:, 1]
+    for i in (0, 10, 100):
+        fila = prueba.iloc[i]
+        z = plano["intercepto"] + sum(
+            c * (float(fila[v]) - mu) / sc
+            for v, c, mu, sc in zip(plano["variables"], plano["coeficientes"], plano["media"], plano["escala"])
+        )
+        assert 1 / (1 + math.exp(-z)) == pytest.approx(esperado[i], abs=1e-9)
+
+
+def test_reentrenar_con_todo_usa_todas_las_filas():
+    entrenamiento, prueba = datos.dividir_en_el_tiempo(ejemplos_sinteticos(), 0.2)
+    _, _, filas = entrenar.reentrenar_con_todo(entrenamiento, prueba)
+    assert filas == len(entrenamiento) + len(prueba)

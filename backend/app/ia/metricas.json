@@ -1,0 +1,54 @@
+{
+  "entrenado_en": "2026-11-25T01:04:06+00:00",
+  "modelo": "regresion_logistica",
+  "umbral": 0.9,
+  "variables": [
+    "mm_10",
+    "mm_30",
+    "mm_60",
+    "acumulado_dia",
+    "vecinas_mm_30",
+    "vecinas_mm_60",
+    "hora_sin",
+    "hora_cos"
+  ],
+  "validacion": {
+    "regresion_logistica": {
+      "pr_auc": 0.0386,
+      "umbral": 0.9
+    },
+    "arbol_de_gradiente": {
+      "pr_auc": 0.0255,
+      "umbral": 0.05
+    }
+  },
+  "prueba": {
+    "filas": 4285,
+    "tasa_lluvia": 0.0308,
+    "modelo": {
+      "precision": 0.4828,
+      "recall": 0.1061,
+      "f1": 0.1739,
+      "roc_auc": 0.6008,
+      "pr_auc": 0.1436,
+      "brier": 0.1147
+    },
+    "linea_base_persistencia": {
+      "precision": 0.6316,
+      "recall": 0.2727,
+      "f1": 0.381
+    },
+    "mejora_f1": -0.2071,
+    "supera_linea_base": false
+  },
+  "entrenamiento": {
+    "filas": 2852,
+    "tasa_lluvia": 0.0379
+  },
+  "sintetico": false,
+  "publicado": {
+    "reentrenado_con_todo": true,
+    "filas": 7137,
+    "umbral": 0.66
+  }
+}

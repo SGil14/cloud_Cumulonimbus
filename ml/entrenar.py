@@ -88,13 +88,10 @@ def validar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame) -> None:
             )
 
 
-def entrenar_y_evaluar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
-    """Devuelve (modelo, umbral, métricas)."""
-    validar(entrenamiento, prueba)
-
+def elegir_modelo(entrenamiento: pd.DataFrame) -> tuple[str, float, dict]:
+    """Elige candidato y umbral con validación cruzada por bloques de tiempo. Devuelve (nombre, umbral, detalle)."""
     entrenamiento = entrenamiento.sort_values("fin").reset_index(drop=True)
 
-    # --- 1. Elegir candidato y umbral con validación cruzada por bloques de tiempo ---
     # Con pocos eventos de lluvia, un solo tramo de validación puede quedar seco. Se parte el entrenamiento en
     # bloques contiguos; cada uno se predice con un modelo que no vio ese bloque ni la hora de cada lado
     # (la etiqueta mira una hora adelante). La prueba no interviene.
@@ -123,6 +120,17 @@ def entrenar_y_evaluar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
         }
     elegido = max(en_validacion, key=lambda n: en_validacion[n]["pr_auc"])
     umbral = en_validacion[elegido]["umbral"]
+
+    return elegido, umbral, en_validacion
+
+
+def entrenar_y_evaluar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
+    """Devuelve (modelo, umbral, métricas)."""
+    validar(entrenamiento, prueba)
+    entrenamiento = entrenamiento.sort_values("fin").reset_index(drop=True)
+
+    # --- 1. Elegir candidato y umbral (la prueba no interviene) ---
+    elegido, umbral, en_validacion = elegir_modelo(entrenamiento)
 
     # --- 2. Reentrenar con todo el entrenamiento ---
     modelo = candidatos()[elegido]
@@ -157,9 +165,45 @@ def entrenar_y_evaluar(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
     return modelo, umbral, metricas
 
 
+def reentrenar_con_todo(entrenamiento: pd.DataFrame, prueba: pd.DataFrame):
+    """Modelo final: mismo procedimiento, pero con todos los datos (la prueba ya cumplió su papel de medir).
+
+    Se usa para el modelo que se publica, porque con tan pocos eventos de lluvia cada evento cuenta.
+    Las métricas reportadas siguen siendo las de la evaluación con la prueba apartada.
+    """
+    todo = pd.concat([entrenamiento, prueba], ignore_index=True)
+    elegido, umbral, _ = elegir_modelo(todo)
+    modelo = candidatos()[elegido]
+    modelo.fit(todo[VARIABLES], todo[ETIQUETA])
+    return modelo, umbral, int(len(todo))
+
+
+def exportar_json(modelo, umbral: float) -> dict | None:
+    """Regresión logística como números planos (media, escala, coeficientes), para usarla sin scikit-learn.
+
+    Devuelve None si el modelo elegido no es una regresión logística.
+    """
+    pasos = getattr(modelo, "named_steps", None)
+    if not pasos or "logisticregression" not in pasos or "standardscaler" not in pasos:
+        return None
+    escala, lineal = pasos["standardscaler"], pasos["logisticregression"]
+    return {
+        "tipo": "regresion_logistica",
+        "variables": VARIABLES,
+        "media": [float(x) for x in escala.mean_],
+        "escala": [float(x) for x in escala.scale_],
+        "coeficientes": [float(x) for x in lineal.coef_[0]],
+        "intercepto": float(lineal.intercept_[0]),
+        "umbral": umbral,
+    }
+
+
 def guardar(modelo, umbral: float, metricas: dict, carpeta: Path = MODELO) -> None:
     carpeta.mkdir(parents=True, exist_ok=True)
     joblib.dump({"modelo": modelo, "umbral": umbral, "variables": VARIABLES}, carpeta / "modelo.joblib")
+    plano = exportar_json(modelo, umbral)
+    if plano:
+        (carpeta / "modelo.json").write_text(json.dumps(plano, indent=2), encoding="utf-8")
     (carpeta / "metricas.json").write_text(json.dumps(metricas, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
@@ -167,6 +211,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--datos", type=Path, default=DATOS)
     p.add_argument("--salida", type=Path, default=MODELO)
+    p.add_argument("--todo", action="store_true", help="publicar un modelo reentrenado con entrenamiento + prueba")
     a = p.parse_args()
 
     try:
@@ -183,6 +228,9 @@ def main() -> None:
     except ValueError as e:
         sys.exit(str(e))
     metricas["sintetico"] = sintetico
+    if a.todo:
+        modelo, umbral, filas = reentrenar_con_todo(entrenamiento, prueba)
+        metricas["publicado"] = {"reentrenado_con_todo": True, "filas": filas, "umbral": umbral}
     guardar(modelo, umbral, metricas, a.salida)
     if sintetico:
         print("DEMO CON DATOS SINTÉTICOS: estas métricas no son evidencia del modelo real.")

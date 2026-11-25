@@ -29,3 +29,4 @@ k8s/secret.yaml
 
 # Datos y modelos de demostración (sintéticos)
 ml/modelo_demo/
+ml/modelo/*.joblib
