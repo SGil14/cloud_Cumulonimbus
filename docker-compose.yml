@@ -4,6 +4,11 @@
 #   2. docker compose up --build
 #   3. Abre http://localhost:8000
 #
+# Monitoreo (también arranca con `docker compose up`):
+#   Grafana     http://localhost:3000   usuario admin y la contraseña GRAFANA_PASSWORD del .env
+#   Prometheus  http://localhost:9090   lee http://app:8000/metrics cada 10 segundos
+# El dashboard «Cumulonimbus · API e IA» ya viene cargado (monitoreo/grafana/dashboards/cumulonimbus.json).
+#
 # Los datos de PostgreSQL se guardan en el volumen "datos_postgres": sobreviven a reinicios y a "docker compose down".
 # Para borrarlos también: docker compose down -v
 
@@ -35,5 +40,38 @@ services:
     ports:
       - "8000:8000"
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    depends_on:
+      - app
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./monitoreo/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - datos_prometheus:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Define GRAFANA_PASSWORD en el archivo .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoreo/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - datos_grafana:/var/lib/grafana
+    ports:
+      - "3000:3000"
+
 volumes:
   datos_postgres:
+  datos_prometheus:
+  datos_grafana:

@@ -44,86 +44,437 @@ data:
   cumulonimbus.json: |
     {
       "uid": "cumulonimbus",
-      "title": "Cumulonimbus · API en Kubernetes",
+      "title": "Cumulonimbus · API e IA",
       "timezone": "America/Bogota",
       "refresh": "10s",
-      "time": { "from": "now-30m", "to": "now" },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
       "schemaVersion": 39,
       "panels": [
         {
-          "id": 1, "type": "timeseries", "title": "Throughput · peticiones por segundo",
+          "id": 1,
+          "type": "timeseries",
+          "title": "Throughput · peticiones por segundo",
           "description": "Peticiones atendidas por todas las réplicas de la API, por ruta.",
-          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 9 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 9
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
           "targets": [
-            { "refId": "A", "legendFormat": "{{ruta}}",
-              "expr": "sum by (ruta) (rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))" },
-            { "refId": "B", "legendFormat": "total",
-              "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))" }
+            {
+              "refId": "A",
+              "legendFormat": "{{ruta}}",
+              "expr": "sum by (ruta) (rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))"
+            },
+            {
+              "refId": "B",
+              "legendFormat": "total",
+              "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m]))"
+            }
           ]
         },
         {
-          "id": 2, "type": "timeseries", "title": "Latencia · p50 y p95",
+          "id": 2,
+          "type": "timeseries",
+          "title": "Latencia · p50 y p95",
           "description": "Tiempo de respuesta de la API (percentiles 50 y 95).",
-          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 9
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
           "targets": [
-            { "refId": "A", "legendFormat": "p95",
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))" },
-            { "refId": "B", "legendFormat": "p50",
-              "expr": "histogram_quantile(0.50, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))" }
+            {
+              "refId": "A",
+              "legendFormat": "p95",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))"
+            },
+            {
+              "refId": "B",
+              "legendFormat": "p50",
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(cumulonimbus_http_request_duration_seconds_bucket{componente=\"cumulonimbus-api\"}[1m])))"
+            }
           ]
         },
         {
-          "id": 3, "type": "stat", "title": "Estaciones con lluvia ahora",
+          "id": 3,
+          "type": "stat",
+          "title": "Estaciones con lluvia ahora",
           "description": "Gauge cumulonimbus_estaciones_lloviendo: estaciones del SAB que registran lluvia en la última consulta.",
-          "gridPos": { "x": 0, "y": 9, "w": 6, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [
-            { "color": "green", "value": null }, { "color": "blue", "value": 1 }, { "color": "orange", "value": 10 }, { "color": "red", "value": 30 } ] } }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
-          "targets": [ { "refId": "A", "expr": "max(cumulonimbus_estaciones_lloviendo)" } ]
-        },
-        {
-          "id": 4, "type": "stat", "title": "Réplicas de la API arriba",
-          "description": "Pods de la API que Prometheus logra consultar.",
-          "gridPos": { "x": 6, "y": 9, "w": 6, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-          "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
-          "targets": [ { "refId": "A", "expr": "sum(up{componente=\"cumulonimbus-api\"})" } ]
-        },
-        {
-          "id": 5, "type": "timeseries", "title": "Peticiones en curso por réplica",
-          "description": "Gauge cumulonimbus_http_requests_in_progress: muestra cómo se reparte la carga entre pods.",
-          "gridPos": { "x": 12, "y": 9, "w": 12, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-          "targets": [ { "refId": "A", "legendFormat": "{{pod}}",
-            "expr": "sum by (pod) (cumulonimbus_http_requests_in_progress{componente=\"cumulonimbus-api\"})" } ]
-        },
-        {
-          "id": 6, "type": "timeseries", "title": "Errores · % de respuestas 5xx",
-          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0 }, "overrides": [] },
-          "targets": [ { "refId": "A", "legendFormat": "5xx",
-            "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\",estado=~\"5..\"}[1m])) / clamp_min(sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m])), 1e-9)" } ]
-        },
-        {
-          "id": 7, "type": "timeseries", "title": "SAB · tiempo de respuesta (p95) y consultas",
-          "description": "Cuánto tarda el servicio del IDIGER y cuántas veces se le consulta (la caché de 90 s las limita).",
-          "gridPos": { "x": 12, "y": 16, "w": 12, "h": 7 },
-          "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [
-            { "matcher": { "id": "byName", "options": "consultas/min" }, "properties": [ { "id": "unit", "value": "short" }, { "id": "custom.axisPlacement", "value": "right" } ] } ] },
+          "gridPos": {
+            "x": 0,
+            "y": 9,
+            "w": 6,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "blue",
+                    "value": 1
+                  },
+                  {
+                    "color": "orange",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "background"
+          },
           "targets": [
-            { "refId": "A", "legendFormat": "p95",
-              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_sab_duracion_seconds_bucket[5m])))" },
-            { "refId": "B", "legendFormat": "consultas/min",
-              "expr": "sum(rate(cumulonimbus_sab_consultas_total[5m])) * 60" }
+            {
+              "refId": "A",
+              "expr": "max(cumulonimbus_estaciones_lloviendo)"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Réplicas de la API arriba",
+          "description": "Pods de la API que Prometheus logra consultar.",
+          "gridPos": {
+            "x": 6,
+            "y": 9,
+            "w": 6,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(up{componente=\"cumulonimbus-api\"})"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Peticiones en curso por réplica",
+          "description": "Gauge cumulonimbus_http_requests_in_progress: muestra cómo se reparte la carga entre pods.",
+          "gridPos": {
+            "x": 12,
+            "y": 9,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "{{pod}}",
+              "expr": "sum by (pod) (cumulonimbus_http_requests_in_progress{componente=\"cumulonimbus-api\"})"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Errores · % de respuestas 5xx",
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "5xx",
+              "expr": "sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\",estado=~\"5..\"}[1m])) / clamp_min(sum(rate(cumulonimbus_http_requests_total{componente=\"cumulonimbus-api\"}[1m])), 1e-9)"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "SAB · tiempo de respuesta (p95) y consultas",
+          "description": "Cuánto tarda el servicio del IDIGER y cuántas veces se le consulta (la caché de 90 s las limita).",
+          "gridPos": {
+            "x": 12,
+            "y": 16,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "consultas/min"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "short"
+                  },
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "p95",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_sab_duracion_seconds_bucket[5m])))"
+            },
+            {
+              "refId": "B",
+              "legendFormat": "consultas/min",
+              "expr": "sum(rate(cumulonimbus_sab_consultas_total[5m])) * 60"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "IA · predicciones por minuto y método",
+          "description": "Predicciones de lluvia entregadas. «modelo» = calculada con el modelo; «persistencia» = respaldo cuando no hay una hora de lecturas continuas.",
+          "gridPos": {
+            "x": 0,
+            "y": 23,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "{{metodo}}",
+              "expr": "sum by (metodo) (rate(cumulonimbus_ia_predicciones_total[1m])) * 60"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "IA · latencia de la predicción (p50 y p95)",
+          "description": "Cuánto tarda en calcularse una predicción (histograma cumulonimbus_ia_prediccion_duracion_seconds).",
+          "gridPos": {
+            "x": 12,
+            "y": 23,
+            "w": 12,
+            "h": 8
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "p95",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(cumulonimbus_ia_prediccion_duracion_seconds_bucket[1m])))"
+            },
+            {
+              "refId": "B",
+              "legendFormat": "p50",
+              "expr": "histogram_quantile(0.50, sum by (le) (rate(cumulonimbus_ia_prediccion_duracion_seconds_bucket[1m])))"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "type": "stat",
+          "title": "IA · predicciones en la última hora",
+          "description": "Total de predicciones entregadas en la última hora, por método.",
+          "gridPos": {
+            "x": 0,
+            "y": 31,
+            "w": 12,
+            "h": 6
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "colorMode": "value"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "legendFormat": "{{metodo}}",
+              "expr": "sum by (metodo) (increase(cumulonimbus_ia_predicciones_total[1h]))"
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "type": "gauge",
+          "title": "IA · probabilidad de la última predicción del modelo",
+          "description": "Gauge cumulonimbus_ia_probabilidad_ultima.",
+          "gridPos": {
+            "x": 12,
+            "y": 31,
+            "w": 12,
+            "h": 6
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 0.5
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.8
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ]
+            }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max(cumulonimbus_ia_probabilidad_ultima)"
+            }
           ]
         }
       ]
