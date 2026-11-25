@@ -1,4 +1,5 @@
 import type { Tema } from "../hooks/useTema";
+import type { Usuario } from "../lib/types";
 
 interface Props {
   tema: Tema;
@@ -11,11 +12,14 @@ interface Props {
   onAlternarRadar: () => void;
   onCambiarDiseno: () => void;
   onAbrirHistorial: () => void;
+  usuario: Usuario | null;
+  onAbrirCuenta: () => void;
 }
 
 export function Barra({
   tema, cargando, radarDisponible, radarActivo, nombreDiseno,
   onActualizar, onAlternarTema, onAlternarRadar, onCambiarDiseno, onAbrirHistorial,
+  usuario, onAbrirCuenta,
 }: Props) {
   return (
     <nav className="barra" aria-label="Aplicación">
@@ -43,6 +47,11 @@ export function Barra({
         <button type="button" className="boton" onClick={onAbrirHistorial} title="Cuánto ha llovido: por horas, días y localidades">
           <span className="boton__icono" aria-hidden>▤</span>
           <span className="boton__texto">Historial</span>
+        </button>
+        <button type="button" className={"boton" + (usuario ? " boton--activo" : "")} onClick={onAbrirCuenta}
+          title={usuario ? `Sesión iniciada como ${usuario.correo}` : "Iniciar sesión o registrarme"}>
+          <span className="boton__icono" aria-hidden>●</span>
+          <span className="boton__texto">{usuario ? usuario.correo.split("@")[0] : "Entrar"}</span>
         </button>
         <button type="button" className="boton" onClick={onCambiarDiseno} title="Cambiar de diseño (mientras eliges el definitivo)">
           <span className="boton__icono" aria-hidden>◐</span>

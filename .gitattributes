@@ -1,0 +1,12 @@
+# Saltos de línea unificados (HU-61): todo el repositorio usa LF.
+* text=auto eol=lf
+
+# Los .bat de Windows necesitan CRLF para ejecutarse bien.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binarios: nunca se tocan.
+*.png binary
+*.jpg binary
+*.ico binary
+*.joblib binary

@@ -1,4 +1,4 @@
-import type { Destino, Estacion, ModoRuta, Resumen, RutaRespuesta } from "../lib/types";
+import type { Destino, Estacion, Favorito, ModoRuta, Resumen, RutaRespuesta } from "../lib/types";
 import { Buscador } from "./Buscador";
 import { FichaEstacion } from "./FichaEstacion";
 import { Localidades } from "./Localidades";
@@ -27,6 +27,10 @@ interface Props {
   errorRuta: string | null;
   onCalcularRuta: (origen: string, destino: string, modo: ModoRuta) => void;
   onLimpiarRuta: () => void;
+  favoritos: Favorito[];
+  sesionActiva: boolean;
+  onGuardarFavorito: (texto: string) => Promise<void>;
+  onBorrarFavorito: (id: number) => Promise<void>;
 }
 
 export function Panel(p: Props) {
@@ -39,7 +43,15 @@ export function Panel(p: Props) {
       )}
 
       <Titular resumen={p.resumen} cargando={p.cargando} />
-      <Buscador buscando={p.buscando} onBuscar={p.onBuscar} valorExterno={p.textoBusqueda} />
+      <Buscador
+        buscando={p.buscando}
+        onBuscar={p.onBuscar}
+        valorExterno={p.textoBusqueda}
+        favoritos={p.favoritos}
+        sesionActiva={p.sesionActiva}
+        onGuardarFavorito={p.onGuardarFavorito}
+        onBorrarFavorito={p.onBorrarFavorito}
+      />
 
       <RutaPanel
         ruta={p.ruta}

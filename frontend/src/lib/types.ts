@@ -178,6 +178,29 @@ export interface RutaRespuesta {
   datos_obtenidos_en: string | null;
 }
 
+export type Rol = "usuario" | "administrador";
+
+export interface Usuario {
+  id: number;
+  correo: string;
+  rol: Rol;
+  creado_en: string;
+}
+
+export interface Sesion {
+  access_token: string;
+  token_type: "bearer";
+  expira_en_segundos: number;
+  usuario: Usuario;
+}
+
+export interface Favorito {
+  id: number;
+  nombre: string;
+  texto: string;
+  creado_en: string;
+}
+
 export type MetodoPrediccion = "modelo" | "persistencia";
 
 export interface EstacionPrediccion {

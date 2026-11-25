@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     recolector_activo: bool = True
     recolector_intervalo_minutos: int = 5
 
+    # Autenticación (JWT). La llave NUNCA va en el código: se pasa por entorno o por Secret de Kubernetes.
+    jwt_secret_key: str = ""  # mínimo 16 caracteres; sin ella el registro y el login responden 503
+    jwt_expira_minutos: int = 60
+    admin_correo: str = ""  # quien se registre con este correo recibe el rol administrador
+
     # API
     cors_origins: list[str] = ["http://localhost:5173"]
     log_level: str = "INFO"

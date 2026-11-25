@@ -18,20 +18,22 @@
 6. [Métricas del Proyecto](#métricas-del-proyecto)
 7. [Instalación y Uso](#instalación-y-uso)
 8. [Documentación de la API](#documentación-de-la-api)
-9. [Atajo para iPhone](#atajo-para-iphone)
-10. [Base de datos](#base-de-datos)
-11. [Reglas y cálculos](#reglas-y-cálculos)
-12. [Los cinco diseños](#los-cinco-diseños)
-13. [Estructura del proyecto](#estructura-del-proyecto)
-14. [Pruebas](#pruebas)
-15. [Despliegue en Azure](#despliegue-en-azure)
-16. [Kubernetes y monitoreo](#kubernetes-y-monitoreo)
-17. [Inteligencia artificial](#inteligencia-artificial)
-18. [Límites que debes conocer](#límites-que-debes-conocer)
-19. [Solución de problemas](#solución-de-problemas)
-20. [Mejoras futuras](#mejoras-futuras)
-21. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
-22. [Enlaces importantes](#enlaces-importantes)
+9. [Autenticación y roles](#autenticación-y-roles)
+10. [Atajo para iPhone](#atajo-para-iphone)
+11. [Base de datos](#base-de-datos)
+12. [Reglas y cálculos](#reglas-y-cálculos)
+13. [Los cinco diseños](#los-cinco-diseños)
+14. [Estructura del proyecto](#estructura-del-proyecto)
+15. [Pruebas](#pruebas)
+16. [Despliegue en Azure](#despliegue-en-azure)
+17. [Kubernetes y monitoreo](#kubernetes-y-monitoreo)
+18. [Inteligencia artificial](#inteligencia-artificial)
+19. [Construir, desplegar y correr todo el stack](#construir-desplegar-y-correr-todo-el-stack)
+20. [Límites que debes conocer](#límites-que-debes-conocer)
+21. [Solución de problemas](#solución-de-problemas)
+22. [Mejoras futuras](#mejoras-futuras)
+23. [Fuentes de datos y créditos](#fuentes-de-datos-y-créditos)
+24. [Enlaces importantes](#enlaces-importantes)
 
 ---
 
@@ -378,19 +380,52 @@ Las métricas se calculan a partir del tablero (GitHub Projects → *Insights*) 
 | Métrica | Cómo se mide | Resultado |
 |---|---|---|
 | **Velocity** | Puntos completados por sprint (campo *Estimación*) | Planeado: Sprint 1 = 30, Sprint 2 = 36, Sprint 3 = 38 (total 104). Entregados: 30, 36 y 38 puntos (**104 de 104**). Sin fechas de sprint no se calcula la velocidad por tiempo. |
-| **Burndown** | Puntos restantes frente al tiempo del sprint | [pendiente] |
-| **Lead time** | Tiempo desde *Backlog* hasta *Done* | [pendiente] |
-| **Cycle time** | Tiempo desde *In Progress* hasta *Done* | [pendiente] |
-| **Throughput** | Historias completadas por periodo | [pendiente] |
+| **Burndown** | Puntos restantes frente al tiempo del sprint | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Lead time** | Tiempo desde *Backlog* hasta *Done* | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Cycle time** | Tiempo desde *In Progress* hasta *Done* | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+| **Throughput** | Historias completadas por periodo | Proyecto 3: ver [las métricas con fechas de sprint](#proyecto-3-métricas-con-las-fechas-de-los-sprints). |
+
+### Proyecto 3: métricas con las fechas de los sprints
+
+Los sprints del Proyecto 3 tienen fechas reales: **Sprint 4** del 23 al 24 de noviembre, **Sprint 5** del 25 al 26 y **Sprint 6** el 27 de noviembre (día de la entrega). Las cifras salen del tablero con un script que se puede volver a correr cuando se quiera:
+
+```bash
+python scripts/metricas.py        # necesita la CLI gh con sesión iniciada
+```
+
+_Calculado el 24/11/2026 14:05 desde el tablero._
+
+| Sprint | Fechas | Historias (hechas/total) | Puntos planeados | Puntos terminados | Velocidad (pts/día) |
+|---|---|---|---|---|---|
+| Sprint 1 | sin fechas (Proyecto 2) | 9/9 | 30 | 30 | — |
+| Sprint 2 | sin fechas (Proyecto 2) | 11/11 | 36 | 36 | — |
+| Sprint 3 | sin fechas (Proyecto 2) | 8/8 | 38 | 38 | — |
+| Sprint 4 | 23/11 al 24/11 | 6/12 | 47 | 27 | 13,5 |
+| Sprint 5 | 25/11 al 26/11 | 2/13 | 65 | 11 | 5,5 |
+| Sprint 6 | 27/11 | 1/11 | 29 | 3 | 3,0 |
+
+- **Historias del Proyecto 3 cerradas:** 9 de 36
+- **Lead time** (Backlog → Done): promedio 19,8 h · mediana 19,6 h · máximo 20,2 h (n = 9)
+- **Cycle time** (primer commit → Done): promedio 0,9 h · mediana 0,9 h · máximo 0,9 h (n = 3)
+- **Throughput** (historias cerradas por día): 2026-11-24: 9
+
+**Cómo leerlas**
+
+- **Velocidad:** puntos de las historias cerradas dividido entre los días del sprint. Los sprints 1 a 3 son del Proyecto 2 y nunca tuvieron fechas, por eso no se les calcula velocidad por tiempo.
+- **Lead time:** desde que la historia entra al tablero (se creó en *Backlog* el 23/11 a las 21:07) hasta que se cierra. Incluye el tiempo de espera en el backlog, por eso es mucho mayor que el cycle time.
+- **Cycle time:** desde el primer commit que menciona la historia hasta que se cierra. Solo cuenta las historias con commits identificados por su número (`HU-xx`); las que se hicieron sin mencionarlo en el commit no entran.
+- **Burndown:** los puntos restantes del Proyecto 3 son los planeados menos los terminados de cada sprint; al ser sprints de uno o dos días, se lee mejor con la tabla de velocidad que con una curva.
+- El tablero no guarda la fecha en que una tarjeta pasa a *In Progress*, por eso el cycle time se aproxima con el primer commit.
+- Las cifras de la tabla son un corte; se recalculan al cierre de cada sprint y antes de la entrega.
 
 ### Resumen del proyecto
 
 - **Historias completadas:** 28 / 28 (fusionadas en `main`)
 - **Velocity promedio:** 34,7 puntos por sprint (104 puntos entre 3 sprints)
 - **Bugs encontrados:** 13 (documentados como issues cerrados, BUG-01 a BUG-13)
-- **Tiempo promedio de resolución:** [pendiente]
+- **Tiempo promedio de resolución:** ver las métricas del Proyecto 3 (lead time y cycle time)
 
-> Las fechas de los sprints deben definirse antes de calcular burndown, lead time y cycle time. Los 13 bugs iniciales se crearon y cerraron al documentar el trabajo previo, por lo que no representan tiempos reales de resolución.
+> Los sprints 1 a 3 (Proyecto 2) no tienen fechas; los del Proyecto 3 sí, y sus métricas están arriba. Los 13 bugs iniciales se crearon y cerraron al documentar el trabajo previo, por lo que no representan tiempos reales de resolución.
 
 ---
 
@@ -576,6 +611,9 @@ Se lee del archivo `.env` de la carpeta raíz o de variables de entorno (las var
 | `RECOLECTOR_INTERVALO_MINUTOS` | `5` | Cada cuántos minutos el recolector guarda lecturas. |
 | `CORS_ORIGINS` | `["http://localhost:5173"]` | Orígenes permitidos para el frontend en desarrollo (formato JSON). No hace falta en producción, porque el backend sirve el frontend. |
 | `LOG_LEVEL` | `INFO` | Nivel de los registros. |
+| `JWT_SECRET_KEY` | vacío | **Secreto.** Llave con la que se firman los tokens de inicio de sesión (mínimo 16 caracteres). Sin ella, registro e inicio de sesión responden `503`. Ver [Autenticación y roles](#autenticación-y-roles). |
+| `JWT_EXPIRA_MINUTOS` | `60` | Minutos que dura un token. |
+| `ADMIN_CORREO` | vacío | Quien se registre con este correo queda como administrador. |
 | `IDECA_API_KEY` | vacío | Opcional. Activa el geocodificador oficial de IDECA (ver [geocodificación](#geocodificación-de-destinos)). |
 | `RUTA_URL` | `https://valhalla1.openstreetmap.de/route` | Servicio de rutas. Cámbialo solo si montas tu propia instancia de Valhalla. |
 | `SAB_URL`, `IDECA_URL`, `NOMINATIM_USER_AGENT` | ver `backend/app/config.py` | Direcciones y cabeceras de los servicios externos. |
@@ -599,9 +637,14 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/historial/destino?lat=&lon=&periodo=` | Cuándo llovió cerca de un punto (las 3 estaciones más cercanas). |
 | `GET /api/atajo?q=` | Una frase en texto plano que dice si llueve en un destino; pensada para el atajo de iPhone. |
 | `GET /api/atajo/ruta?origen=&destino=&modo=` | Una **tarjeta HTML** con mapa que dice si llueve en una ruta (con `lat=` y `lon=` en lugar de `origen=` usa la ubicación del teléfono; con `formato=texto` devuelve texto con emojis). |
+| `POST /api/auth/registro`, `POST /api/auth/login`, `GET /api/auth/yo` | Cuenta de usuario: registro, inicio de sesión (token JWT) y quién soy. Ver [Autenticación y roles](#autenticación-y-roles). |
+| `GET/POST /api/favoritos`, `PUT/DELETE /api/favoritos/{id}` | Destinos favoritos del usuario. **Exigen token.** |
+| `GET /api/admin/usuarios`, `PUT /api/admin/usuarios/{id}/rol` | Administración de usuarios y roles. **Solo administradores.** |
 | `GET /api/prediccion?lat=&lon=` | Probabilidad de lluvia en la próxima hora cerca de un punto, con el método usado (`modelo` o `persistencia`). Ver [Inteligencia artificial](#inteligencia-artificial). |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
+
+Los endpoints de lluvia son públicos; solo los de favoritos y administración piden `Authorization: Bearer <token>`.
 
 Con `?actualizar=true`, `/api/estaciones` y `/api/resumen` ignoran la caché y consultan al SAB en ese instante.
 
@@ -622,6 +665,112 @@ curl "http://localhost:8000/api/ruta?origen=Portal%2080&destino=Chapinero&modo=b
 ```
 
 **Códigos de error útiles:** `502` si el SAB no responde; `503` si un servicio de geocodificación o de rutas falla por red (conviene reintentar: la app **no** responde «no existe» cuando en realidad fue un fallo de red).
+
+---
+
+## Autenticación y roles
+
+Proyecto 3. Consultar la lluvia sigue siendo **público**: no hace falta cuenta para ver el mapa, buscar un destino, ver el historial ni usar el atajo de iPhone. La cuenta sirve para guardar **destinos favoritos**, y su rol decide qué más se puede hacer.
+
+### Cómo funciona
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant API as API (FastAPI)
+    participant BD as PostgreSQL
+    U->>API: POST /api/auth/registro {correo, clave}
+    API->>BD: guarda el usuario con la clave en hash (scrypt)
+    API-->>U: 201 {id, correo, rol}
+    U->>API: POST /api/auth/login {correo, clave}
+    API->>BD: busca el usuario y compara el hash
+    API-->>U: 200 {access_token (JWT), expira_en_segundos}
+    U->>API: GET /api/favoritos  + Authorization: Bearer <token>
+    API->>API: verifica firma, vencimiento y usuario
+    API-->>U: 200 solo los favoritos de ese usuario
+    U->>API: GET /api/favoritos  (sin token o con token vencido)
+    API-->>U: 401
+```
+
+- **Contraseñas:** se guardan con hash **scrypt** y una sal distinta por usuario. Nunca se guardan ni se devuelven en texto plano. Mínimo 8 caracteres, con al menos una letra y un número.
+- **Token:** un **JWT** firmado con HS256 que lleva el usuario (`sub`), el correo, el **rol** y la expiración (`exp`). Dura 60 minutos (`JWT_EXPIRA_MINUTOS`).
+- **Mensajes de error:** un correo que no existe y una contraseña equivocada responden lo mismo (`401`), para no revelar qué correos están registrados.
+- **Correos:** se guardan en minúsculas; no se permiten repetidos (`409`).
+
+### Roles
+
+| Rol | Cómo se obtiene | Qué puede hacer |
+|---|---|---|
+| *(sin cuenta)* | — | Todo lo de lluvia: estaciones, resumen, destino, ruta, historial, radar, atajo. |
+| `usuario` | Es el rol por omisión al registrarse. | Lo anterior, más **crear, editar, ver y borrar sus propios favoritos**. No puede ver ni tocar los de otros (responde `404`). |
+| `administrador` | Registrarse con el correo configurado en `ADMIN_CORREO`, o que otro administrador lo cambie. | Lo anterior, más **listar los usuarios** y **cambiar el rol** de cualquiera. No puede quitarse el rol si es el único administrador. |
+
+### Endpoints
+
+| Endpoint | Quién | Descripción |
+|---|---|---|
+| `POST /api/auth/registro` | Público | Crea la cuenta. `201`; `409` si el correo ya existe; `422` si los datos no son válidos. |
+| `POST /api/auth/login` | Público | Devuelve el token. `401` si las credenciales no coinciden. |
+| `GET /api/auth/yo` | Con token | El usuario del token. |
+| `GET /api/favoritos` | Con token | Mis favoritos. |
+| `POST /api/favoritos` | Con token | Guarda un favorito `{nombre, texto}` (máximo 50 por usuario; el nombre no se repite). |
+| `PUT /api/favoritos/{id}` | Con token | Edita uno de mis favoritos. |
+| `DELETE /api/favoritos/{id}` | Con token | Borra uno de mis favoritos (`204`). |
+| `GET /api/admin/usuarios` | Administrador | Lista los usuarios. `403` si eres `usuario`. |
+| `PUT /api/admin/usuarios/{id}/rol` | Administrador | Cambia el rol `{"rol": "usuario" \| "administrador"}`. |
+
+### Probarlo con `curl`
+
+```bash
+# 1. Registrarse
+curl -X POST http://localhost:8000/api/auth/registro \
+  -H "Content-Type: application/json" \
+  -d '{"correo":"ana@ejemplo.com","clave":"Clave1234"}'
+
+# 2. Iniciar sesión y guardar el token
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"correo":"ana@ejemplo.com","clave":"Clave1234"}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# 3. Usar el token en un endpoint protegido
+curl http://localhost:8000/api/auth/yo -H "Authorization: Bearer $TOKEN"
+curl -X POST http://localhost:8000/api/favoritos -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"nombre":"Casa","texto":"Portal 80"}'
+
+# 4. Lo mismo sin token: 401
+curl -i http://localhost:8000/api/favoritos
+
+# 5. Con rol insuficiente: 403
+curl -i http://localhost:8000/api/admin/usuarios -H "Authorization: Bearer $TOKEN"
+```
+
+En Windows PowerShell, usa `curl.exe` (no el alias `curl`) y escribe el JSON entre comillas simples; o prueba todo desde `/docs`, con el botón **Authorize**.
+
+### Configurar la llave de firma
+
+La llave con la que se firman los tokens es un **secreto**: no está en el código ni en el repositorio. Se pasa por variable de entorno (mínimo 16 caracteres; usa una larga y aleatoria):
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+| Dónde corre | Cómo se configura |
+|---|---|
+| Local | `JWT_SECRET_KEY=...` en el `.env` (ver `.env.example`). |
+| Docker Compose | `JWT_SECRET_KEY` en el `.env` de la raíz; `docker-compose.yml` se la pasa a la app. |
+| Kubernetes | Clave `JWT_SECRET_KEY` del Secret `cumulonimbus-secretos` (ver `k8s/secret.example.yaml`). `scripts/k8s-desplegar.ps1` la genera sola la primera vez y se la agrega a un Secret que ya existía sin ella. |
+
+Sin llave, el registro y el inicio de sesión responden `503` y el resto de la app sigue funcionando. Si la llave cambia, las sesiones abiertas dejan de valer y los usuarios deben iniciar sesión de nuevo. Con `ADMIN_CORREO=tu-correo@ejemplo.com`, quien se registre con ese correo queda como administrador.
+
+### En la interfaz
+
+El botón **Entrar** de la barra abre la ventana de la cuenta (registro e inicio de sesión). Con la sesión iniciada, el buscador ofrece **☆ Guardar «…» en mis favoritos** y muestra la lista **Mis favoritos** (un clic busca ese destino; la × lo quita). La sesión se conserva al recargar la página; un token vencido la cierra solo. Los administradores ven además la lista de usuarios en su ventana.
+
+### Límites conocidos
+
+- Los tokens no se pueden revocar antes de que venzan (no hay lista de bloqueo ni renovación); «Cerrar sesión» solo borra el token del navegador.
+- No hay recuperación de contraseña ni verificación del correo.
+- No hay límite de intentos de inicio de sesión.
 
 ---
 
@@ -681,6 +830,14 @@ Parámetros: `destino` (obligatorio); `origen` **o** `lat` y `lon` (ubicación d
 4. **URL**: `http://TU-IP:8000/api/atajo/ruta?origen=` **[Origen]** `&destino=` **[Destino]** `&modo=` **[Modo]**.
 5. **Mostrar vista web** con esa URL: abre la tarjeta en una ventana **dentro de Atajos**, sin pasar a Safari.
 
+**Variante: usar tu ubicación como origen** (en el atajo de ruta, en lugar de escribir el origen)
+
+1. Quita los pasos del «Origen» y agrega **Obtener ubicación actual** (la primera vez, iOS pide permiso de ubicación para Atajos).
+2. **Obtener detalles de ubicaciones** → *Latitud* → **Establecer variable** `Lat`; y otra igual con *Longitud* → `Lon`.
+3. La **URL** pasa a ser: `http://TU-IP:8000/api/atajo/ruta?lat=` **[Lat]** `&lon=` **[Lon]** `&destino=` **[Destino]** `&modo=` **[Modo]**.
+
+El iPhone entrega los decimales con coma (`4,6097`); el servidor acepta coma o punto. La tarjeta muestra «Tu ubicación (barrio, localidad)» como origen.
+
 **3. Atajo maestro**
 
 <img src="docs/img/atajo-12-maestro-armado.png" alt="Atajo maestro armado" width="260"> <img src="docs/img/atajo-01-menu-maestro.png" alt="Menú del atajo maestro" width="300">
@@ -699,13 +856,13 @@ Un **Seleccionar del menú** («¿Qué quieres consultar?») con dos opciones, �
 
 - **Probado en un iPhone** contra el servidor local, en la misma red Wi-Fi (capturas de arriba): atajo de lugar, de ruta con mapa y maestro.
 - **Con la app desplegada:** el atajo funciona igual contra su URL pública (`https://…`, sin puerto), siempre que la versión publicada incluya estos endpoints.
-- **«Mi ubicación» como origen:** el servidor ya acepta `lat` y `lon` (con coma o punto decimal), pero el atajo de ruta todavía no lo usa. Es una mejora pendiente.
+- **«Mi ubicación» como origen:** el servidor acepta `lat` y `lon` con coma o punto decimal (probado con `lat=4,6097&lon=-74,0817`: devuelve «Tu ubicación (El Liston, Los Mártires) → Portal 80»). Los pasos para armar la variante en Atajos están arriba; **falta probarla en un iPhone y agregar las capturas**.
 
 ---
 
 ## Base de datos
 
-Cuatro tablas, creadas por las migraciones de Alembic (`backend/alembic/versions/`).
+Seis tablas, creadas por las migraciones de Alembic (`backend/alembic/versions/`).
 
 | Tabla | Para qué sirve | Campos principales |
 |---|---|---|
@@ -713,6 +870,8 @@ Cuatro tablas, creadas por las migraciones de Alembic (`backend/alembic/versions
 | `lecturas` | **Histórico**: una fila por estación y hora de lectura. Es la tabla para análisis. | `id_sensor`, `fecha_lectura`, `valor_5min`, `acumulado_dia`; única por (`id_sensor`, `fecha_lectura`) |
 | `geocache` | Destinos ya resueltos, para no volver a preguntar a internet. | `consulta_normalizada`, `latitud`, `longitud`, `barrio`, `localidad`, `proveedor`, `aproximada`, `usos` |
 | `consultas` | Registro de cada búsqueda de destino. | `texto`, `tipo`, `encontrado`, `barrio`, `localidad`, `proveedor`, `lloviendo_cerca` |
+| `usuarios` | Cuentas registradas. | `correo` (único), `clave_hash` (scrypt), `rol` (`usuario` o `administrador`) |
+| `favoritos` | Destinos guardados por cada usuario. | `usuario_id`, `nombre` (único por usuario), `texto` |
 
 Ejemplo de análisis directamente en SQL: las horas más lluviosas del último mes.
 
@@ -834,14 +993,16 @@ Cumulonimbus/
 │   ├── app/
 │   │   ├── main.py                # Arranque de FastAPI; sirve también el frontend compilado
 │   │   ├── config.py              # Configuración (.env)
-│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo (+ atajo_ruta y atajo_mapa), mapa, radar, historial, ruta, health
+│   │   ├── api/routes/            # Endpoints: lluvia, destino, atajo (+ atajo_ruta y atajo_mapa), mapa, radar, historial, ruta, health,
+│   │   │                          #            auth, favoritos y admin
+│   │   ├── api/deps.py            # Quién hace la petición (token) y qué rol tiene
 │   │   ├── services/              # Lógica: cliente SAB, reglas de lluvia, geocodificación,
 │   │   │                          #         historial, ruta, radar, barrios
 │   │   ├── repositories/          # Lectura y escritura en PostgreSQL
 │   │   ├── db/                    # Conexión y tablas
 │   │   ├── jobs/recolector.py     # Guarda el histórico cada 5 minutos
 │   │   ├── models/                # Modelos de datos (pydantic)
-│   │   └── core/                  # Caché y zona horaria
+│   │   └── core/                  # Caché, zona horaria y seguridad (hash de claves y JWT)
 │   ├── alembic/                   # Migraciones de la base de datos
 │   ├── tests/                     # Pruebas automáticas
 │   ├── iniciar.bat                # Migra y levanta la API (Windows)
@@ -849,7 +1010,7 @@ Cumulonimbus/
 ├── frontend/                      # React + Vite + TypeScript + MapLibre
 │   └── src/
 │       ├── components/            # Mapa, panel, buscador, historial, ruta, radar…
-│       ├── hooks/                 # Datos, tema, diseño, historial
+│       ├── hooks/                 # Datos, tema, diseño, historial, sesión
 │       ├── lib/                   # API, formatos, geometría, lluvia animada, filtro del radar
 │       └── disenos/               # Un CSS por diseño + paletas del mapa
 ├── ml/                            # Inteligencia artificial: datos, entrenamiento, evaluación y pruebas
@@ -877,7 +1038,8 @@ cd backend
 .venv\Scripts\python -m pytest
 ```
 
-Hay **80 pruebas** del backend que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta, el radar, la predicción de lluvia y la coherencia del dashboard de Grafana con las métricas de la API. La carpeta `ml/` tiene otras **29** (`cd ml && python -m pytest`): preparación de datos, entrenamiento, simulador y una prueba de que la API calcula las variables igual que el entrenamiento. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
+Hay **104 pruebas** del backend que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta, el radar, la predicción de lluvia, la coherencia del dashboard de Grafana con las métricas de la API y la **autenticación** (registro, inicio de sesión, token ausente, inválido y vencido, rol insuficiente, favoritos ajenos; estas usan SQLite en memoria y no necesitan PostgreSQL). La carpeta `ml/` tiene otras **29** (`cd ml && python -m pytest`): preparación de datos, entrenamiento, simulador y una prueba de que la API calcula las variables igual que el entrenamiento. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
+
 
 ---
 
@@ -969,7 +1131,7 @@ flowchart LR
 |---|---|
 | `k8s/00-namespace.yaml` | Namespace `cumulonimbus` |
 | `k8s/01-configmap.yaml` | **ConfigMap** con la configuración no sensible (recolector apagado en la API) |
-| `k8s/secret.example.yaml` | Ejemplo del **Secret** (`DATABASE_URL`, `POSTGRES_PASSWORD`, admin de Grafana). El real nunca se sube (`k8s/secret.yaml` está en `.gitignore`) |
+| `k8s/secret.example.yaml` | Ejemplo del **Secret** (`DATABASE_URL`, `POSTGRES_PASSWORD`, `JWT_SECRET_KEY`, admin de Grafana). El real nunca se sube (`k8s/secret.yaml` está en `.gitignore`) |
 | `k8s/10-postgres.yaml` | PostgreSQL 17 como **StatefulSet** con volumen persistente y Service headless |
 | `k8s/20-migraciones-job.yaml` | **Job** que aplica las migraciones una sola vez por despliegue |
 | `k8s/30-api.yaml` | **Deployment de la API con 2 réplicas**, probes de *readiness* (`/api/health/ready`) y *liveness* (`/api/health/live`), `requests`/`limits`, y **Service** LoadBalancer |
@@ -1065,7 +1227,7 @@ kubectl delete namespace cumulonimbus monitoreo   # borrar todo
 
 | Cuándo | Qué hace |
 |---|---|
-| Pull Request hacia `main` | Corre las 56 pruebas del backend y construye la imagen (backend + frontend) sin publicarla |
+| Pull Request hacia `main` | Corre las 80 pruebas del backend y construye la imagen (backend + frontend) sin publicarla |
 | Fusión a `main` | Además **publica la imagen en GitHub Container Registry**: `ghcr.io/sgil14/cloud_cumulonimbus:sha-<commit>` y `:latest` |
 | Etiqueta `vX.Y.Z` | Publica también `:vX.Y.Z` |
 | Fusión a `main` con AKS configurado | Copia la imagen al ACR y actualiza la API y el recolector del clúster |
@@ -1128,6 +1290,98 @@ python entrenar.py --todo     # evalúa y publica ml/modelo/modelo.json
 
 ---
 
+## Construir, desplegar y correr todo el stack
+
+Guía de punta a punta del Proyecto 3: de la imagen al clúster, con monitoreo y la funcionalidad de IA. Los detalles de cada pieza están en las secciones enlazadas.
+
+```mermaid
+flowchart LR
+    COD["Código<br/>backend + frontend"] -->|docker build| IMG["Imagen<br/>cumulonimbus:sha-…"]
+    IMG -->|push| REG["Registro<br/>GHCR o ACR"]
+    REG --> K8S["Clúster<br/>Docker Desktop o AKS"]
+    K8S --> API["API + recolector<br/>+ PostgreSQL"]
+    API -->|/metrics| PROM["Prometheus"] --> GRAF["Grafana"]
+    ML["ml/<br/>datos y modelo"] -.->|IA| API
+```
+
+### 1. Construir la imagen
+
+Una sola imagen contiene el backend y el frontend compilado (el `Dockerfile` usa dos etapas). Desde la raíz:
+
+```bash
+docker build -t cumulonimbus:local .
+docker run --rm -p 8000:8000 -e DATABASE_URL=... -e JWT_SECRET_KEY=... cumulonimbus:local
+```
+
+Para probar con una base de datos ya lista, `docker compose up --build` levanta la app y PostgreSQL juntos (ver [Instalación y Uso](#instalación-y-uso); define `POSTGRES_PASSWORD` y `JWT_SECRET_KEY` en el `.env`).
+
+### 2. Publicar la imagen
+
+| Registro | Cómo |
+|---|---|
+| **GitHub Container Registry** | Automático: cada fusión a `main` publica `ghcr.io/sgil14/cloud_cumulonimbus:sha-<commit>` y `:latest` ([pipeline](#imagen-versionada-y-pipeline-github-actions)). |
+| **Azure Container Registry (ACR)** | `k8s-desplegar.ps1 -Acr <nombre>` construye la imagen, la etiqueta con el commit y la sube. A mano: `az acr login --name <acr>`, `docker tag cumulonimbus:local <acr>.azurecr.io/cumulonimbus:v1`, `docker push <acr>.azurecr.io/cumulonimbus:v1`. |
+
+Cada despliegue usa una etiqueta con versión, nunca solo `latest`, para poder volver atrás.
+
+### 3. Desplegar en el clúster
+
+```powershell
+# Clúster local (Docker Desktop con Kubernetes activado)
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
+
+# AKS en Azure (crea antes el clúster con scripts/aks-crear.ps1)
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+```
+
+El script aplica los manifiestos de [`k8s/`](k8s/) en este orden: namespaces y ConfigMap → **Secrets** (contraseña de PostgreSQL, `DATABASE_URL`, **llave JWT** y admin de Grafana, generados al azar la primera vez) → PostgreSQL → Job de **migraciones** → API (2 réplicas) y recolector → HPA → Prometheus y Grafana. Se puede correr las veces que haga falta. Para comprobar:
+
+```powershell
+kubectl get pods,svc -n cumulonimbus
+kubectl get pods,svc -n monitoreo
+```
+
+Detalle de cada manifiesto, decisiones y límites de Azure for Students: [Kubernetes y monitoreo](#kubernetes-y-monitoreo).
+
+### 4. Levantar el stack de monitoreo
+
+Prometheus y Grafana se despliegan con el mismo script (namespace `monitoreo`). Para verlos:
+
+| Qué | Cómo |
+|---|---|
+| Métricas crudas de la API | `http://<IP de la app>/metrics` |
+| Prometheus | `kubectl port-forward svc/prometheus 9090:9090 -n monitoreo` → http://localhost:9090 |
+| **Grafana y su dashboard** | `http://<IP de Grafana>:3000` (usuario `admin`; contraseña en el Secret `grafana-admin`, ver el comando en [Kubernetes y monitoreo](#kubernetes-y-monitoreo)) |
+
+El dashboard «Cumulonimbus» (7 paneles) y la fuente de datos de Prometheus vienen ya cargados desde [`k8s/monitoreo/20-grafana.yaml`](k8s/monitoreo/20-grafana.yaml). Para ver las gráficas moverse, genera carga con `python scripts/trafico.py --segundos 150 --usuarios 60`.
+
+### 5. La funcionalidad de IA
+
+La predicción de lluvia a corto plazo se documenta en [`docs/ia.md`](docs/ia.md): decisión, datos, modelo y evaluación frente a la línea base. El código está en [`ml/`](ml/):
+
+```bash
+cd ml
+pip install -r requirements.txt
+python preparar_datos.py     # arma entrenamiento.csv y prueba.csv desde la tabla `lecturas`
+python entrenar.py           # entrena, evalúa y guarda el modelo
+```
+
+### 6. Dónde está cada cosa
+
+| Qué | Dónde |
+|---|---|
+| Manifiestos de Kubernetes | [`k8s/`](k8s/) |
+| Secret de ejemplo (sin valores reales) | [`k8s/secret.example.yaml`](k8s/secret.example.yaml) |
+| Dashboards de Grafana | [`k8s/monitoreo/20-grafana.yaml`](k8s/monitoreo/20-grafana.yaml) |
+| Scripts de despliegue y de carga | [`scripts/`](scripts/) |
+| Pipeline de CI/CD | [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml) |
+| IA: decisión, datos y modelo | [`docs/ia.md`](docs/ia.md) y [`ml/`](ml/) |
+| Guion de la demo de Kubernetes | [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md) |
+| Guion de la demo del contexto y la autenticación | [`docs/demo-autenticacion.md`](docs/demo-autenticacion.md) |
+| Autenticación y roles | [Autenticación y roles](#autenticación-y-roles) |
+
+---
+
 ## Límites que debes conocer
 
 Para no engañarte con lo que muestra la app:
@@ -1178,8 +1432,8 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Despliegue en Azure Container Apps |
 | ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
 | ⏳ | Revisar el error 502 del radar en Azure |
-| ⏳ | «Mi ubicación» como origen en el atajo de ruta |
-| ⏳ | GitHub Actions: integración continua y despliegue automático |
+| ⏳ | «Mi ubicación» como origen en el atajo de ruta (servidor y pasos listos; falta probarlo en el iPhone) |
+| ✅ | GitHub Actions: integración continua, publicación de la imagen y despliegue en AKS |
 | ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
 
 ---
