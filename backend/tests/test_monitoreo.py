@@ -44,6 +44,8 @@ def test_cada_consulta_del_dashboard_usa_metricas_que_existen():
     for panel in dashboard_de_archivo()["panels"]:
         for objetivo in panel["targets"]:
             usadas = set(re.findall(r"\b(cumulonimbus_[a-z0-9_]+)", objetivo["expr"]))
+            if re.match(r"sum\(up\{", objetivo["expr"]):  # `up` es una métrica de Prometheus, no de la API
+                continue
             assert usadas, f"El panel «{panel['title']}» no usa ninguna métrica de la API"
             assert usadas <= existentes, f"«{panel['title']}» usa métricas inexistentes: {usadas - existentes}"
 
