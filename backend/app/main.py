@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import (
-    admin, atajo, atajo_ruta, auth, destino, favoritos, health, historial, lluvia, mapa, radar, ruta,
+    admin, atajo, atajo_ruta, auth, destino, favoritos, health, historial, lluvia, mapa, prediccion, radar, ruta,
 )
 from app.config import RAIZ_PROYECTO, get_settings
 from app.core.metricas import MetricasMiddleware, endpoint_metricas
@@ -69,6 +69,7 @@ app.include_router(atajo_ruta.router)
 app.include_router(mapa.router)
 app.include_router(radar.router)
 app.include_router(historial.router)
+app.include_router(prediccion.router)
 app.include_router(ruta.router)
 app.include_router(auth.router)
 app.include_router(favoritos.router)

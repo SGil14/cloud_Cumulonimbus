@@ -1,5 +1,5 @@
 import type {
-  Destino, EstacionesRespuesta, Favorito, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Radar,
+  Destino, EstacionesRespuesta, Favorito, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Prediccion, Radar,
   RankingHistorial, Resumen, RutaRespuesta, SerieHistorial, Sesion, Usuario,
 } from "./types";
 
@@ -66,6 +66,8 @@ export const api = {
     pedir<SerieHistorial>(`/api/historial/serie?periodo=${periodo}${localidad ? `&localidad=${encodeURIComponent(localidad)}` : ""}`, senal),
   historialRanking: (periodo: Periodo, senal?: AbortSignal) =>
     pedir<RankingHistorial>(`/api/historial/ranking?periodo=${periodo}`, senal),
+  prediccion: (lat: number, lon: number, senal?: AbortSignal) =>
+    pedir<Prediccion>(`/api/prediccion?lat=${lat}&lon=${lon}`, senal),
   historialDestino: (lat: number, lon: number, periodo: Periodo, senal?: AbortSignal) =>
     pedir<HistorialDestino>(`/api/historial/destino?lat=${lat}&lon=${lon}&periodo=${periodo}`, senal),
 

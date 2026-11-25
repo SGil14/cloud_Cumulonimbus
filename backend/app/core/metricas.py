@@ -47,6 +47,22 @@ SAB_LATENCIA = Histogram(
     buckets=(0.25, 0.5, 1, 2, 4, 8, 16, 30),
 )
 
+# --- IA: predicción de lluvia en la próxima hora ---
+IA_PREDICCIONES = Counter(
+    "cumulonimbus_ia_predicciones_total",
+    "Predicciones de lluvia entregadas, por método (modelo o persistencia).",
+    ["metodo"],
+)
+IA_LATENCIA = Histogram(
+    "cumulonimbus_ia_prediccion_duracion_seconds",
+    "Lo que tarda en calcularse una predicción de lluvia.",
+    buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5),
+)
+IA_PROBABILIDAD = Gauge(
+    "cumulonimbus_ia_probabilidad_ultima",
+    "Probabilidad de lluvia de la última predicción hecha con el modelo.",
+)
+
 # Rutas que no se miden: el propio /metrics y los sondeos de Kubernetes ensuciarían las gráficas.
 _NO_MEDIR = {"/metrics", "/api/health", "/api/health/live", "/api/health/ready"}
 

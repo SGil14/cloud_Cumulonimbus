@@ -1,6 +1,8 @@
 """Guardado de estaciones y lecturas del SAB."""
 
-from sqlalchemy import func
+from datetime import datetime
+
+from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -61,3 +63,17 @@ def guardar_snapshot(db: Session, estaciones: list[EstacionSAB]) -> int:
     nuevas = guardar_lecturas(db, estaciones)
     db.commit()
     return nuevas
+
+
+def lecturas_recientes(db: Session, id_sensores: list[int], desde: datetime) -> dict[int, list[tuple[datetime, float]]]:
+    """Lecturas (fecha, acumulado del día) de las estaciones pedidas desde `desde`, agrupadas por estación."""
+    db.execute(text("SET LOCAL statement_timeout = 3000"))  # una predicción no puede colgar la API
+    filas = db.execute(
+        select(Lectura.id_sensor, Lectura.fecha_lectura, Lectura.acumulado_dia)
+        .where(Lectura.id_sensor.in_(id_sensores), Lectura.fecha_lectura >= desde)
+        .order_by(Lectura.id_sensor, Lectura.fecha_lectura)
+    ).all()
+    por_estacion: dict[int, list[tuple[datetime, float]]] = {}
+    for id_sensor, fecha, acumulado in filas:
+        por_estacion.setdefault(id_sensor, []).append((fecha, float(acumulado)))
+    return por_estacion

@@ -200,3 +200,37 @@ export interface Favorito {
   texto: string;
   creado_en: string;
 }
+
+export type MetodoPrediccion = "modelo" | "persistencia";
+
+export interface EstacionPrediccion {
+  id_sensor: number;
+  nombre: string;
+  localidad: string;
+  distancia_km: number;
+  lloviendo: boolean;
+  mm_60: number | null;
+}
+
+export interface EvaluacionModelo {
+  f1_modelo: number;
+  f1_persistencia: number;
+  supera_persistencia: boolean;
+  nota: string;
+}
+
+export interface Prediccion {
+  datos_obtenidos_en: string;
+  latitud: number;
+  longitud: number;
+  horizonte_minutos: number;
+  metodo: MetodoPrediccion;
+  probabilidad: number | null;
+  llovera_probable: boolean;
+  llueve_ahora: boolean;
+  mensaje: string;
+  motivo_respaldo: string | null;
+  estaciones: EstacionPrediccion[];
+  evaluacion: EvaluacionModelo | null;
+  aviso: string;
+}

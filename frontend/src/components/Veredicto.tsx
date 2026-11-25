@@ -1,5 +1,6 @@
 import { ETIQUETA_INTENSIDAD, km, mm, nombreLocalidad } from "../lib/format";
 import type { Destino } from "../lib/types";
+import { PrediccionLluvia } from "./PrediccionLluvia";
 
 interface Props {
   destino: Destino;
@@ -41,6 +42,8 @@ export function Veredicto({ destino, onCerrar, onSeleccionar, onVerHistorial }: 
       {ubicacion.aproximada && (
         <p className="aviso">Ubicación aproximada: no hallé el punto exacto, usé el más cercano sobre esa vía.</p>
       )}
+
+      <PrediccionLluvia lat={ubicacion.latitud} lon={ubicacion.longitud} />
 
       <button type="button" className="ver-historial" onClick={onVerHistorial}>
         Ver cuándo ha llovido aquí <span aria-hidden>→</span>

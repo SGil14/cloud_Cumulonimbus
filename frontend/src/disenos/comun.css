@@ -242,3 +242,29 @@
 .fav { display: inline-flex; align-items: center; list-style: none; }
 .fav__borrar { margin-left: 2px; width: 22px; height: 22px; background: none; border: 0; color: inherit; opacity: 0.55; font-size: 16px; line-height: 1; cursor: pointer; }
 .fav__borrar:hover { opacity: 1; }
+
+/* ---------- Predicción de lluvia (próxima hora) ---------- */
+
+.pred {
+  margin: 14px 0 12px; padding: 12px 14px;
+  background: var(--h-tarjeta); color: var(--h-ink);
+  border: 1px solid var(--h-linea); border-radius: calc(var(--h-radio) / 1.5);
+  text-align: left;
+}
+.pred--lluvia { border-color: var(--h-acento); }
+.pred--error { border-color: var(--h-alerta); }
+.pred__cabecera { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.pred__etiqueta { font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--h-muted); margin: 0; }
+.pred__metodo { font-size: 11px; padding: 2px 8px; border: 1px solid var(--h-linea); border-radius: 999px; color: var(--h-muted); }
+.pred__titulo { margin: 6px 0 8px; font-size: 17px; font-weight: 600; }
+.pred__estado, .pred__detalle { margin: 6px 0 0; font-size: 14px; }
+.pred__nota { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: var(--h-muted); }
+.pred__barra { position: relative; height: 22px; border-radius: 999px; background: var(--h-campo); border: 1px solid var(--h-linea); overflow: hidden; }
+.pred__relleno { height: 100%; background: var(--h-acento); transition: width 0.4s ease-out; }
+.pred__valor { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--h-ink); mix-blend-mode: normal; text-shadow: 0 0 3px var(--h-fondo); }
+.pred__reintentar {
+  margin-top: 8px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  color: var(--h-ink); background: transparent; border: 1px solid var(--h-linea); border-radius: calc(var(--h-radio) / 2);
+}
+.pred__reintentar:hover { border-color: var(--h-acento); color: var(--h-acento); }
+.pred__reintentar:focus-visible { outline: 2px solid var(--h-acento); outline-offset: 2px; }
