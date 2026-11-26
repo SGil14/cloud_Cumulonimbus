@@ -541,8 +541,11 @@ kind: Service
 metadata:
   name: grafana
   namespace: monitoreo
+  annotations:
+    # En AKS: http://cumulonimbus-grafana.<región>.cloudapp.azure.com:3000 (Docker Desktop lo ignora).
+    service.beta.kubernetes.io/azure-dns-label-name: cumulonimbus-grafana
 spec:
-  type: LoadBalancer   # Docker Desktop: http://localhost:3000
+  type: LoadBalancer   # Docker Desktop: http://localhost:3000 · AKS: nombre DNS de arriba
   selector:
     app: grafana
   ports:

@@ -64,6 +64,10 @@ metadata:
   namespace: cumulonimbus
   labels:
     app: cumulonimbus-api
+  annotations:
+    # En AKS publica la app como http://cumulonimbus-bogota.<región>.cloudapp.azure.com
+    # (en Docker Desktop esta anotación se ignora).
+    service.beta.kubernetes.io/azure-dns-label-name: cumulonimbus-bogota
 spec:
   type: LoadBalancer
   selector:

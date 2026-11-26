@@ -7,7 +7,7 @@
 # Uso:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\aks-crear.ps1 -Suscripcion "<id o nombre>"
 # Después:
-#   powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+#   powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer -Region centralus
 #
 # Para ahorrar crédito cuando no se usa:
 #   az aks stop  -g rg-cumulonimbus-k8s -n aks-cumulonimbus     # apaga los nodos (no cobra cómputo)
@@ -53,5 +53,5 @@ az aks get-credentials -g $Grupo -n $Cluster --overwrite-existing; Ok "obtener c
 kubectl get nodes
 
 Write-Host "`nListo. Ahora despliega la app con:" -ForegroundColor Green
-Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr $Acr -SinMetricsServer"
+Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr $Acr -SinMetricsServer -Region $Region"
 Write-Host "Para volver al clúster local:  kubectl config use-context docker-desktop"

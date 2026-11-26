@@ -5,7 +5,9 @@
 #   Local (Docker Desktop):
 #     powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
 #   AKS (construye la imagen y la sube al ACR conectado al clúster; AKS ya trae metrics-server):
-#     powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr acrcumulonimbusk8s1234 -SinMetricsServer
+#     powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr acrcumulonimbusk8se1d4 -SinMetricsServer -Region centralus
+#   Con -Region, la app y Grafana quedan con nombre DNS de Azure (cumulonimbus-bogota / cumulonimbus-grafana
+#   .<región>.cloudapp.azure.com) y el panel del administrador enlaza a Grafana.
 #   Con una imagen ya publicada (por ejemplo la del pipeline):
 #     ... -Imagen ghcr.io/sgil14/cloud_cumulonimbus:sha-abc1234
 #
@@ -15,8 +17,11 @@
 param(
   [string]$Imagen = "",          # imagen ya construida; si se omite, se construye aquí
   [string]$Acr = "",             # nombre del Azure Container Registry al que subir la imagen (AKS)
-  [switch]$SinMetricsServer      # AKS y otros clústeres administrados ya lo traen
+  [switch]$SinMetricsServer,     # AKS y otros clústeres administrados ya lo traen
+  [string]$Region = ""           # región de AKS (centralus): arma los nombres DNS de Azure
 )
+$appUrl = if ($Region) { "http://cumulonimbus-bogota.$Region.cloudapp.azure.com" } else { "http://localhost" }
+$grafanaUrl = if ($Region) { "http://cumulonimbus-grafana.$Region.cloudapp.azure.com:3000" } else { "http://localhost:3000" }
 
 $ErrorActionPreference = "Stop"
 $raiz = Split-Path $PSScriptRoot -Parent
@@ -91,6 +96,8 @@ Write-Host "`n7. API (2 réplicas), recolector y autoescalado ..." -ForegroundCo
 AplicarConImagen k8s/30-api.yaml
 AplicarConImagen k8s/31-recolector.yaml
 kubectl apply -f k8s/40-hpa.yaml
+# Enlace a Grafana en el panel del administrador (GRAFANA_URL); depende de dónde corre el clúster.
+kubectl set env deployment/api GRAFANA_URL=$grafanaUrl -n cumulonimbus | Out-Null
 kubectl rollout status deployment/api -n cumulonimbus --timeout=300s
 
 Write-Host "`n8. Prometheus y Grafana ..." -ForegroundColor Cyan
@@ -102,7 +109,7 @@ kubectl rollout status deployment/grafana -n monitoreo --timeout=300s
 Write-Host "`nListo. Imagen desplegada: $Imagen" -ForegroundColor Green
 kubectl get pods,svc -n cumulonimbus
 kubectl get pods,svc -n monitoreo
-Write-Host "`nEn Docker Desktop: app http://localhost · Grafana http://localhost:3000"
-Write-Host "En AKS: usa la EXTERNAL-IP de los Services api (:80) y grafana (:3000)."
-Write-Host "Prometheus queda solo dentro del clúster:  kubectl port-forward svc/prometheus 9090:9090 -n monitoreo  y abrir http://localhost:9090"
-Write-Host "Tráfico: python scripts/trafico.py --url http://<ip-o-localhost> --segundos 150 --usuarios 60"
+Write-Host "`n  App:     $appUrl"
+Write-Host "  Grafana: $grafanaUrl  (el nombre DNS de Azure tarda 1-2 minutos la primera vez)"
+Write-Host "  Prometheus queda solo dentro del clúster:  kubectl port-forward svc/prometheus 9090:9090 -n monitoreo  y abrir http://localhost:9090"
+Write-Host "  Tráfico: python scripts/trafico.py --url $appUrl --segundos 150 --usuarios 60"
