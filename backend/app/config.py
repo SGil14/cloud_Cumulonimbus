@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     jwt_expira_minutos: int = 60
     admin_correo: str = ""  # quien se registre con este correo recibe el rol administrador
 
+    # (Opcional) dirección de Grafana: el panel de administración muestra un enlace si se define
+    grafana_url: str = ""
+
     # API
     cors_origins: list[str] = ["http://localhost:5173"]
     log_level: str = "INFO"

@@ -39,6 +39,32 @@ class UsuarioOut(BaseModel):
     creado_en: datetime
 
 
+class UsuarioAdminOut(UsuarioOut):
+    """Lo que ve un administrador de cada usuario: además de los datos, cuántos favoritos guardó."""
+
+    favoritos: int = 0
+
+
+class EstadoSistema(BaseModel):
+    """Resumen del sistema para el panel de administración."""
+
+    usuarios: int
+    administradores: int
+    favoritos: int
+    estaciones: int
+    lecturas: int
+    lecturas_24h: int
+    ultima_lectura: datetime | None
+    minutos_desde_ultima_lectura: int | None
+    recolector_activo_en_este_proceso: bool
+    recolector_intervalo_minutos: int
+    ia_modelo_disponible: bool
+    ia_f1_modelo: float | None
+    ia_f1_persistencia: float | None
+    ia_supera_linea_base: bool | None
+    grafana_url: str
+
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
