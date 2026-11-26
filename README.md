@@ -614,6 +614,7 @@ Se lee del archivo `.env` de la carpeta raíz o de variables de entorno (las var
 | `JWT_SECRET_KEY` | vacío | **Secreto.** Llave con la que se firman los tokens de inicio de sesión (mínimo 16 caracteres). Sin ella, registro e inicio de sesión responden `503`. Ver [Autenticación y roles](#autenticación-y-roles). |
 | `JWT_EXPIRA_MINUTOS` | `60` | Minutos que dura un token. |
 | `ADMIN_CORREO` | vacío | Quien se registre con este correo queda como administrador. |
+| `GRAFANA_URL` | vacío | Opcional. Si se define, el panel del administrador muestra un enlace a Grafana. |
 | `IDECA_API_KEY` | vacío | Opcional. Activa el geocodificador oficial de IDECA (ver [geocodificación](#geocodificación-de-destinos)). |
 | `RUTA_URL` | `https://valhalla1.openstreetmap.de/route` | Servicio de rutas. Cámbialo solo si montas tu propia instancia de Valhalla. |
 | `SAB_URL`, `IDECA_URL`, `NOMINATIM_USER_AGENT` | ver `backend/app/config.py` | Direcciones y cabeceras de los servicios externos. |
@@ -639,7 +640,7 @@ El backend expone una API JSON; el frontend es solo uno de sus clientes. Toda la
 | `GET /api/atajo/ruta?origen=&destino=&modo=` | Una **tarjeta HTML** con mapa que dice si llueve en una ruta (con `lat=` y `lon=` en lugar de `origen=` usa la ubicación del teléfono; con `formato=texto` devuelve texto con emojis). |
 | `POST /api/auth/registro`, `POST /api/auth/login`, `GET /api/auth/yo` | Cuenta de usuario: registro, inicio de sesión (token JWT) y quién soy. Ver [Autenticación y roles](#autenticación-y-roles). |
 | `GET/POST /api/favoritos`, `PUT/DELETE /api/favoritos/{id}` | Destinos favoritos del usuario. **Exigen token.** |
-| `GET /api/admin/usuarios`, `PUT /api/admin/usuarios/{id}/rol` | Administración de usuarios y roles. **Solo administradores.** |
+| `GET /api/admin/usuarios`, `GET /api/admin/usuarios/{id}/favoritos`, `PUT /api/admin/usuarios/{id}/rol`, `DELETE /api/admin/usuarios/{id}`, `GET /api/admin/estado` | Administración de usuarios, roles y estado del sistema. **Solo administradores.** |
 | `GET /api/prediccion?lat=&lon=` | Probabilidad de lluvia en la próxima hora cerca de un punto, con el método usado (`modelo` o `persistencia`). Ver [Inteligencia artificial](#inteligencia-artificial). |
 | `GET /api/radar` | Imagen del radar (PNG transparente en base64) y la zona que cubre. |
 | `GET /api/localidades` | Contorno de las localidades (GeoJSON), usado para dibujar el mapa. |
@@ -703,7 +704,7 @@ sequenceDiagram
 |---|---|---|
 | *(sin cuenta)* | — | Todo lo de lluvia: estaciones, resumen, destino, ruta, historial, radar, atajo. |
 | `usuario` | Es el rol por omisión al registrarse. | Lo anterior, más **crear, editar, ver y borrar sus propios favoritos**. No puede ver ni tocar los de otros (responde `404`). |
-| `administrador` | Registrarse con el correo configurado en `ADMIN_CORREO`, o que otro administrador lo cambie. | Lo anterior, más **listar los usuarios** y **cambiar el rol** de cualquiera. No puede quitarse el rol si es el único administrador. |
+| `administrador` | Registrarse con el correo configurado en `ADMIN_CORREO`, o que otro administrador lo cambie. | Lo anterior, más **listar los usuarios** (con sus favoritos), **cambiar el rol** de cualquiera, **eliminar cuentas** y ver el **estado del sistema**. No puede quitarse el rol si es el único administrador ni eliminar su propia cuenta. |
 
 ### Endpoints
 
@@ -716,8 +717,11 @@ sequenceDiagram
 | `POST /api/favoritos` | Con token | Guarda un favorito `{nombre, texto}` (máximo 50 por usuario; el nombre no se repite). |
 | `PUT /api/favoritos/{id}` | Con token | Edita uno de mis favoritos. |
 | `DELETE /api/favoritos/{id}` | Con token | Borra uno de mis favoritos (`204`). |
-| `GET /api/admin/usuarios` | Administrador | Lista los usuarios. `403` si eres `usuario`. |
-| `PUT /api/admin/usuarios/{id}/rol` | Administrador | Cambia el rol `{"rol": "usuario" \| "administrador"}`. |
+| `GET /api/admin/usuarios` | Administrador | Lista los usuarios con cuántos favoritos tiene cada uno. `403` si eres `usuario`. |
+| `GET /api/admin/usuarios/{id}/favoritos` | Administrador | Los favoritos de ese usuario. |
+| `PUT /api/admin/usuarios/{id}/rol` | Administrador | Cambia el rol `{"rol": "usuario" \| "administrador"}`. `409` si eres el único administrador y te lo quitas. |
+| `DELETE /api/admin/usuarios/{id}` | Administrador | Elimina la cuenta y sus favoritos (`204`). `409` si intentas borrarte a ti mismo. |
+| `GET /api/admin/estado` | Administrador | Resumen: usuarios, favoritos, estaciones, lecturas, última lectura, estado de la IA y enlace a Grafana. |
 
 ### Probarlo con `curl`
 
@@ -764,7 +768,7 @@ Sin llave, el registro y el inicio de sesión responden `503` y el resto de la a
 
 ### En la interfaz
 
-El botón **Entrar** de la barra abre la ventana de la cuenta (registro e inicio de sesión). Con la sesión iniciada, el buscador ofrece **☆ Guardar «…» en mis favoritos** y muestra la lista **Mis favoritos** (un clic busca ese destino; la × lo quita). La sesión se conserva al recargar la página; un token vencido la cierra solo. Los administradores ven además la lista de usuarios en su ventana.
+El botón **Entrar** de la barra abre la ventana de la cuenta (registro e inicio de sesión). Con la sesión iniciada, el buscador ofrece **☆ Guardar «…» en mis favoritos** y muestra la lista **Mis favoritos** (un clic busca ese destino; la × lo quita). La sesión se conserva al recargar la página; un token vencido la cierra solo. Los administradores ven además, en la misma ventana, el **estado del sistema** (usuarios, lecturas, última lectura del recolector, IA y enlace a Grafana) y la lista de usuarios, desde la cual pueden **cambiar el rol**, **ver los favoritos** y **eliminar** cuentas (con confirmación; no pueden cambiarse ni borrarse a sí mismos).
 
 ### Límites conocidos
 
@@ -1038,7 +1042,7 @@ cd backend
 .venv\Scripts\python -m pytest
 ```
 
-Hay **104 pruebas** del backend que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta, el radar, la predicción de lluvia, la coherencia del dashboard de Grafana con las métricas de la API y la **autenticación** (registro, inicio de sesión, token ausente, inválido y vencido, rol insuficiente, favoritos ajenos; estas usan SQLite en memoria y no necesitan PostgreSQL). La carpeta `ml/` tiene otras **29** (`cd ml && python -m pytest`): preparación de datos, entrenamiento, simulador y una prueba de que la API calcula las variables igual que el entrenamiento. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
+Hay **110 pruebas** del backend que cubren las reglas de intensidad y acumulado, la lectura de direcciones del Catastro, la geocodificación, el historial, la ruta, el radar, la predicción de lluvia, la coherencia del dashboard de Grafana con las métricas de la API y la **autenticación** (registro, inicio de sesión, token ausente, inválido y vencido, rol insuficiente, favoritos ajenos, panel de administración; estas usan SQLite en memoria y no necesitan PostgreSQL). La carpeta `ml/` tiene otras **29** (`cd ml && python -m pytest`): preparación de datos, entrenamiento, simulador y una prueba de que la API calcula las variables igual que el entrenamiento. Usan datos de ejemplo guardados en `backend/tests/fixtures`.
 
 
 ---
