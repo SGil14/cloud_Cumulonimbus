@@ -227,10 +227,30 @@
 .cuenta__datos > div { padding: 10px 14px; background: var(--h-tarjeta); border: 1px solid var(--h-linea); border-radius: calc(var(--h-radio) * 0.7); }
 .cuenta__datos dt { font-size: 12px; color: var(--h-muted); }
 .cuenta__datos dd { font-weight: 600; word-break: break-all; }
-.cuenta__admin { margin-top: 16px; }
-.cuenta__admin ul { margin-top: 6px; max-height: 160px; overflow-y: auto; }
-.cuenta__admin li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--h-linea); font-size: 13.5px; }
-.cuenta__admin em { font-style: normal; color: var(--h-muted); }
+.cuenta--admin { width: min(760px, 100%); }
+.admin { margin-top: 18px; display: flex; flex-direction: column; gap: 18px; }
+.admin__estado { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 8px; }
+.admin__estado > div { padding: 9px 12px; background: var(--h-tarjeta); border: 1px solid var(--h-linea); border-radius: calc(var(--h-radio) * 0.6); }
+.admin__estado dt { font-size: 11.5px; color: var(--h-muted); }
+.admin__estado dd { font-weight: 600; font-size: 16px; }
+.admin__estado small { display: block; font-weight: 400; font-size: 11.5px; color: var(--h-muted); }
+.admin__nota { margin-top: 8px; font-size: 12.5px; color: var(--h-muted); }
+.admin__nota a { color: var(--h-acento); }
+.admin__usuarios { margin-top: 6px; }
+.admin__fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 9px 0; border-top: 1px solid var(--h-linea); font-size: 13.5px; }
+.admin__quien { flex: 1 1 220px; min-width: 0; }
+.admin__quien strong { display: block; font-weight: 600; word-break: break-all; }
+.admin__quien small { color: var(--h-muted); font-size: 12px; }
+.admin__fila select, .admin__fila button {
+  font: inherit; font-size: 12.5px; padding: 5px 10px; color: var(--h-ink); background: var(--h-tarjeta);
+  border: 1px solid var(--h-linea); border-radius: calc(var(--h-radio) / 2); cursor: pointer;
+}
+.admin__fila select:disabled, .admin__fila button:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin__fila button:hover:not(:disabled) { border-color: var(--h-acento); color: var(--h-acento); }
+.admin__fila .admin__peligro { border-color: var(--h-alerta); }
+.admin__favs { flex-basis: 100%; padding: 4px 0 2px 12px; color: var(--h-muted); font-size: 12.5px; }
+.admin__favs li { padding: 2px 0; }
+.admin__ok { margin-top: 8px; font-size: 13px; color: var(--h-acento); }
 
 .fav-guardar {
   margin-top: 10px; padding: 7px 12px; background: transparent; color: inherit; opacity: 0.85;

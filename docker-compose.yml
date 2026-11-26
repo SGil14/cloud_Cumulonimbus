@@ -40,6 +40,8 @@ services:
       # Llave de firma de los tokens de inicio de sesión (define JWT_SECRET_KEY en el .env).
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-}
       ADMIN_CORREO: ${ADMIN_CORREO:-}
+      # Enlace a Grafana en el panel del administrador (el de este mismo compose).
+      GRAFANA_URL: ${GRAFANA_URL:-http://localhost:3000}
     ports:
       - "8000:8000"
 

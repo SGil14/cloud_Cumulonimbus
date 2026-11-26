@@ -1,6 +1,6 @@
 import type {
   Destino, EstacionesRespuesta, Favorito, HistorialDestino, LimitesLocalidades, ModoRuta, Periodo, Prediccion, Radar,
-  RankingHistorial, Resumen, RutaRespuesta, SerieHistorial, Sesion, Usuario,
+  RankingHistorial, Resumen, RutaRespuesta, SerieHistorial, Sesion, Usuario, UsuarioAdmin, EstadoSistema, Rol,
 } from "./types";
 
 export class ApiError extends Error {
@@ -77,7 +77,12 @@ export const api = {
   login: (correo: string, clave: string) =>
     pedir<Sesion>("/api/auth/login", { metodo: "POST", cuerpo: { correo, clave } }),
   yo: (token: string) => pedir<Usuario>("/api/auth/yo", { token }),
-  usuarios: (token: string) => pedir<Usuario[]>("/api/admin/usuarios", { token }),
+  usuarios: (token: string) => pedir<UsuarioAdmin[]>("/api/admin/usuarios", { token }),
+  estadoSistema: (token: string) => pedir<EstadoSistema>("/api/admin/estado", { token }),
+  favoritosDe: (token: string, id: number) => pedir<Favorito[]>(`/api/admin/usuarios/${id}/favoritos`, { token }),
+  cambiarRol: (token: string, id: number, rol: Rol) =>
+    pedir<Usuario>(`/api/admin/usuarios/${id}/rol`, { metodo: "PUT", token, cuerpo: { rol } }),
+  eliminarUsuario: (token: string, id: number) => pedir<void>(`/api/admin/usuarios/${id}`, { metodo: "DELETE", token }),
   favoritos: (token: string) => pedir<Favorito[]>("/api/favoritos", { token }),
   crearFavorito: (token: string, nombre: string, texto: string) =>
     pedir<Favorito>("/api/favoritos", { metodo: "POST", token, cuerpo: { nombre, texto } }),

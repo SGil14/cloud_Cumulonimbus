@@ -60,7 +60,7 @@ curl.exe -i $API/api/admin/usuarios -H "Authorization: Bearer $TOKEN"
 ```
 
 - «Existen dos roles: `usuario` y `administrador`. El rol viaja en el token y la API lo verifica: un usuario normal recibe **`403`** en la zona de administración.»
-- Si hay tiempo: iniciar sesión con el correo del administrador y mostrar en **Mi cuenta** la lista de usuarios (solo la ve el administrador).
+- Si hay tiempo: iniciar sesión con el correo del administrador y abrir **Mi cuenta** y mostrar el panel del administrador (solo él lo ve): estado del sistema, cambio de rol, favoritos de cada usuario y eliminar una cuenta.
 
 ## Si algo falla
 
