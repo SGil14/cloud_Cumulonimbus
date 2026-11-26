@@ -1049,62 +1049,65 @@ Hay **110 pruebas** del backend que cubren las reglas de intensidad y acumulado,
 
 ## Despliegue en Azure
 
-La aplicación está **desplegada en Microsoft Azure** con **Azure Container Apps**. El despliegue lo hizo y lo documentó @jhonAleVelasco.
+La aplicación está **desplegada en Microsoft Azure Kubernetes Service (AKS)**. El despliegue lo hizo y lo documentó @jhonAleVelasco.
 
 | Dato | Valor |
 |---|---|
-| **App en vivo** | https://ca-cumulonimbus.greensea-2c8f82a0.centralus.azurecontainerapps.io |
-| **Suscripción** | Azure for Students |
-| **Grupo de recursos** | `rg-cumulonimbus` (Central US) |
-| **Fecha del despliegue** | 16 de octubre de 2026 |
-| **Documentación detallada** | Carpeta `docs/despliegue/`: paso a paso, capturas del portal, scripts y costos (a cargo de @jhonAleVelasco) |
+| **App en vivo** | http://cumulonimbus-bogota.centralus.cloudapp.azure.com |
+| **Grafana** | http://cumulonimbus-grafana.centralus.cloudapp.azure.com:3000 (usuario `admin`) |
+| **Servicio** | Azure Kubernetes Service (plan gratuito), región Central US |
+| **Suscripción** | Azure for Students del equipo |
+| **Grupo de recursos** | `rg-cumulonimbus-k8s` |
+| **Versión actual** | Imagen `acrcumulonimbusk8se1d4.azurecr.io/cumulonimbus:sha-<commit>` |
+| **Detalle técnico** | Sección [Kubernetes y monitoreo](#kubernetes-y-monitoreo) y guion en [`docs/demo-kubernetes.md`](docs/demo-kubernetes.md) |
 
-### Cómo está armado
+> El clúster se **apaga cuando no se usa** para no gastar el crédito de estudiante. Si los links no responden, está apagado: se prende con `az aks start -g rg-cumulonimbus-k8s -n aks-cumulonimbus` (unos 5 minutos).
 
-Toda la aplicación viaja en **una sola imagen Docker** (la del `Dockerfile` de este repositorio): al arrancar aplica las migraciones y levanta la API, que también sirve el frontend y ejecuta el **recolector** cada 5 minutos.
+### Qué hay en Azure
 
-| Recurso | Para qué sirve |
-|---|---|
-| `ca-cumulonimbus` (Container App) | La app: API, frontend y recolector |
-| `cae-cumulonimbus` (entorno) | Red y plataforma donde corre la app |
-| `psql-cumulonimbus-8995` (PostgreSQL flexible 16) | Histórico de lecturas, caché de destinos y consultas |
-| `acrcumulonimbus8995` (Container Registry) | Guarda las imágenes Docker (`cumulonimbus:v1`, `v2`…) |
-| `kv-cumulonimbus-8995` (Key Vault) | Guarda la URL de la base y su contraseña |
-| `id-cumulonimbus` (identidad administrada) | Permite a la app descargar la imagen y leer secretos **sin contraseñas** |
-| `log-cumulonimbus` (Log Analytics) | Logs de la app |
+| Recurso | Qué es | Para qué sirve |
+|---|---|---|
+| `rg-cumulonimbus-k8s` | Grupo de recursos | Agrupa todo el despliegue, con etiquetas `proyecto=cumulonimbus` |
+| `aks-cumulonimbus` | Clúster AKS | 1 nodo `Standard_D2s_v3` (2 vCPU, 8 GiB) donde corren la app, PostgreSQL, Prometheus y Grafana |
+| `acrcumulonimbusk8se1d4` | Azure Container Registry | Guarda las imágenes con versión; el clúster las descarga **sin contraseña** (identidad administrada, rol AcrPull) |
+| Service `api` | LoadBalancer con IP pública | Publica la app con el nombre `cumulonimbus-bogota.centralus.cloudapp.azure.com` |
+| Service `grafana` | LoadBalancer con IP pública | Publica Grafana con el nombre `cumulonimbus-grafana.centralus.cloudapp.azure.com` |
 
-### Decisiones importantes
+Los nombres DNS los pone Azure a partir de la anotación `service.beta.kubernetes.io/azure-dns-label-name` de cada Service (`k8s/30-api.yaml` y `k8s/monitoreo/20-grafana.yaml`), así que no cambian aunque cambie la IP.
 
-- **Una réplica fija** (`min-replicas 1`): el recolector debe correr cada 5 minutos; con escala a cero se apagaría sin visitas y el historial tendría huecos.
-- **La contraseña vive en Key Vault** y la app la lee con su identidad: no está en el código ni en la configuración visible. El `.env` nunca se sube a git.
-- **SSL obligatorio** en PostgreSQL y acceso solo desde servicios de Azure; la base no acepta conexiones desde internet.
-- **Imagen construida en local** y subida con `docker push`, porque Azure for Students bloquea `az acr build`.
-
-### Actualizar la app
+### Prender, actualizar y apagar
 
 ```powershell
-.\scripts\actualizar.ps1 -Version v2
+# Prender el clúster y conectar kubectl
+az aks start -g rg-cumulonimbus-k8s -n aks-cumulonimbus
+az aks get-credentials -g rg-cumulonimbus-k8s -n aks-cumulonimbus --overwrite-existing
+
+# Desplegar la versión actual de main (construye, sube al ACR y actualiza todo)
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr acrcumulonimbusk8se1d4 -SinMetricsServer -Region centralus
+
+# Ver lo que corre
+kubectl get pods,svc -n cumulonimbus
+
+# Apagar al terminar
+az aks stop -g rg-cumulonimbus-k8s -n aks-cumulonimbus
 ```
 
-Construye la imagen, la sube con la etiqueta nueva, cambia la Container App a esa imagen y consulta `/api/health`. Hay que subir el número de versión en cada despliegue para poder volver atrás.
+Para crear todo desde cero en otra suscripción: `scripts/aks-crear.ps1 -Suscripcion "<id>"`.
 
-### Costos aproximados (precios de lista, Central US)
+### Costos aproximados
 
-PostgreSQL B1ms ≈ 16 USD al mes (cobra las 24 horas), Container Registry Basic ≈ 5 USD, la Container App unos pocos dólares y Key Vault, identidad y logs céntimos. Para pausar sin borrar hay que detener la base y bajar las réplicas a 0 (el recolector se detiene); para borrar todo, eliminar el grupo `rg-cumulonimbus`.
+Encendido, el nodo `Standard_D2s_v3` cuesta unos 2–3 USD al día; el plan gratuito de AKS no cobra el plano de control. Apagado solo se pagan el ACR Basic (~5 USD al mes) y las IP públicas reservadas (céntimos). Borrar todo: `az group delete -n rg-cumulonimbus-k8s --yes`.
 
-### Estado y pendientes conocidos
+### Versión 1 (Proyecto 2): Azure Container Apps, retirada
 
-- **Funciona:** `/api/health` responde `{"estado":"ok","base_datos":"ok"}`, el frontend carga y el recolector guarda lecturas.
-- **Radar:** `/api/radar` devolvió **502** desde Azure el 16/10. Hay que revisar si el KMZ del IDIGER es accesible desde esa red. La app sigue funcionando sin el radar.
-- **CI/CD:** el despliegue automático con GitHub Actions está pendiente; hoy se despliega con el script.
+En octubre de 2026 la app se desplegó en **Azure Container Apps** (grupo `rg-cumulonimbus`, con PostgreSQL gestionado, Key Vault e identidad administrada). Esa suscripción se quedó sin crédito, así que **ese despliegue ya no está en línea** y su histórico no se migró. La documentación completa, con capturas del portal y los scripts, está en [`docs/despliegue/`](docs/despliegue/README.md).
 
-El `Dockerfile` sirve igual en otros proveedores: basta con definir `DATABASE_URL` y dejar el recolector activo en **una sola** instancia.
 
 ---
 
 ## Kubernetes y monitoreo
 
-Proyecto 3. La app corre en un clúster de **Kubernetes** con **Prometheus** y **Grafana** dentro del mismo clúster. Probado en el Kubernetes de **Docker Desktop** (clúster local, permitido por el enunciado y sin costo).
+Proyecto 3. La app corre en un clúster de **Kubernetes** con **Prometheus** y **Grafana** dentro del mismo clúster. Funciona igual en el Kubernetes de **Docker Desktop** (clúster local, sin costo) y en **AKS** (Azure), que es donde está publicada: ver [Despliegue en Azure](#despliegue-en-azure).
 
 ### Qué se despliega
 
@@ -1250,7 +1253,7 @@ Los mismos manifiestos sirven en AKS. El clúster se crea en la suscripción del
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\aks-crear.ps1 -Suscripcion "<id o nombre de la suscripción>"
-powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer -Region centralus
 ```
 
 `aks-crear.ps1` crea el grupo `rg-cumulonimbus-k8s`, un **ACR** y un **AKS** (plan gratuito, 1 nodo `Standard_D2s_v3`: 2 vCPU y 8 GiB), y conecta el ACR al clúster con identidad administrada, **sin usuario ni contraseña**. Después `k8s-desplegar.ps1 -Acr` construye la imagen, la sube al ACR con su versión y despliega todo. AKS ya trae metrics-server. Las IP públicas salen en `kubectl get svc`.
@@ -1335,7 +1338,7 @@ Cada despliegue usa una etiqueta con versión, nunca solo `latest`, para poder v
 powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1
 
 # AKS en Azure (crea antes el clúster con scripts/aks-crear.ps1)
-powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer
+powershell -ExecutionPolicy Bypass -File .\scripts\k8s-desplegar.ps1 -Acr <nombre-del-acr> -SinMetricsServer -Region centralus
 ```
 
 El script aplica los manifiestos de [`k8s/`](k8s/) en este orden: namespaces y ConfigMap → **Secrets** (contraseña de PostgreSQL, `DATABASE_URL`, **llave JWT** y admin de Grafana, generados al azar la primera vez) → PostgreSQL → Job de **migraciones** → API (2 réplicas) y recolector → HPA → Prometheus y Grafana. Se puede correr las veces que haga falta. Para comprobar:
@@ -1433,9 +1436,10 @@ Para no engañarte con lo que muestra la app:
 | ✅ | Ruta de un lugar a otro |
 | ✅ | Radar con filtro de ecos débiles y zonas de color por estación |
 | ✅ | Docker (imagen construida y probada) |
-| ✅ | Despliegue en Azure Container Apps |
+| ✅ | Despliegue en Azure Container Apps (Proyecto 2, retirado) |
+| ✅ | Despliegue en Azure Kubernetes Service (AKS) con Prometheus, Grafana y autoescalado |
 | ✅ | Atajo para iPhone: lugar, ruta con mapa y atajo maestro |
-| ⏳ | Revisar el error 502 del radar en Azure |
+| ✅ | Radar funcionando en Azure (el 502 era de Container Apps) |
 | ⏳ | «Mi ubicación» como origen en el atajo de ruta (servidor y pasos listos; falta probarlo en el iPhone) |
 | ✅ | GitHub Actions: integración continua, publicación de la imagen y despliegue en AKS |
 | ⏳ | `.gitattributes` para unificar los saltos de línea del repositorio |
@@ -1463,7 +1467,8 @@ Aún no se ha definido una licencia para el código.
 
 ## Enlaces importantes
 
-- **Aplicación desplegada:** https://ca-cumulonimbus.greensea-2c8f82a0.centralus.azurecontainerapps.io
+- **Aplicación desplegada (AKS):** http://cumulonimbus-bogota.centralus.cloudapp.azure.com
+- **Grafana:** http://cumulonimbus-grafana.centralus.cloudapp.azure.com:3000
 - **Repositorio del curso:** [SGil14/cloud_Cumulonimbus](https://github.com/SGil14/cloud_Cumulonimbus)
 - **GitHub Project (tablero Kanban):** [Cumulonimbus · Tablero Kanban](https://github.com/users/SGil14/projects/2)
 - **Repositorio previo de la aplicación base:** [SGil14/Cumulonimbus](https://github.com/SGil14/Cumulonimbus)

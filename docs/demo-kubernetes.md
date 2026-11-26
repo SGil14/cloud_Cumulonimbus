@@ -1,11 +1,17 @@
 # Guion de la demo: Kubernetes y monitoreo
 
 Parte de la sustentación del Proyecto 3 (unos 4 de los 8 minutos de demostración). Sirve igual en el clúster
-local (Docker Desktop) y en AKS: en AKS cambia `localhost` por la `EXTERNAL-IP` de cada Service.
+local (Docker Desktop) y en AKS.
+
+| | AKS (Azure) | Docker Desktop |
+|---|---|---|
+| App | http://cumulonimbus-bogota.centralus.cloudapp.azure.com | http://localhost |
+| Grafana | http://cumulonimbus-grafana.centralus.cloudapp.azure.com:3000 | http://localhost:3000 |
+| Tráfico | `python scripts/trafico.py --url http://cumulonimbus-bogota.centralus.cloudapp.azure.com --segundos 150 --usuarios 80` | `python scripts/trafico.py --segundos 150 --usuarios 60` |
 
 ## Antes de entrar (10 minutos antes)
 
-- [ ] Docker Desktop abierto y Kubernetes en verde (o el AKS encendido: `az aks start -g rg-cumulonimbus-k8s -n aks-cumulonimbus`).
+- [ ] AKS encendido **al menos 1 hora antes** (la IA necesita una hora de lecturas): `az aks start -g rg-cumulonimbus-k8s -n aks-cumulonimbus`. Comprobar `kubectl config current-context` → `aks-cumulonimbus` (abrir Docker Desktop lo cambia a `docker-desktop`).
 - [ ] `kubectl get pods -A` sin pods en error.
 - [ ] Pestañas abiertas: la app, Grafana (sesión iniciada en el dashboard «Cumulonimbus · API en Kubernetes») y Prometheus → *Status → Targets*.
 - [ ] Una terminal en la raíz del repositorio, con letra grande.
@@ -56,7 +62,7 @@ kubectl get hpa -n cumulonimbus -w
 En otra:
 
 ```powershell
-python scripts/trafico.py --segundos 150 --usuarios 60
+python scripts/trafico.py --url http://cumulonimbus-bogota.centralus.cloudapp.azure.com --segundos 150 --usuarios 80
 ```
 
 Mientras corre, mostrar Grafana:
