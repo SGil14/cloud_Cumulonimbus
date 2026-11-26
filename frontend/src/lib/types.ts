@@ -187,6 +187,29 @@ export interface Usuario {
   creado_en: string;
 }
 
+/** Lo que el administrador ve de cada usuario: además de los datos, cuántos favoritos guardó. */
+export interface UsuarioAdmin extends Usuario {
+  favoritos: number;
+}
+
+export interface EstadoSistema {
+  usuarios: number;
+  administradores: number;
+  favoritos: number;
+  estaciones: number;
+  lecturas: number;
+  lecturas_24h: number;
+  ultima_lectura: string | null;
+  minutos_desde_ultima_lectura: number | null;
+  recolector_activo_en_este_proceso: boolean;
+  recolector_intervalo_minutos: number;
+  ia_modelo_disponible: boolean;
+  ia_f1_modelo: number | null;
+  ia_f1_persistencia: number | null;
+  ia_supera_linea_base: boolean | null;
+  grafana_url: string;
+}
+
 export interface Sesion {
   access_token: string;
   token_type: "bearer";

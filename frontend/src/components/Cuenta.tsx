@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { api } from "../lib/api";
+import { PanelAdmin } from "./PanelAdmin";
 import type { Usuario } from "../lib/types";
 
 interface Props {
@@ -20,7 +20,6 @@ export function Cuenta({ usuario, token, onIniciar, onRegistrar, onSalir, onCerr
   const [clave, setClave] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [usuarios, setUsuarios] = useState<Usuario[] | null>(null);
   const primerCampo = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -30,12 +29,6 @@ export function Cuenta({ usuario, token, onIniciar, onRegistrar, onSalir, onCerr
   }, [onCerrar]);
 
   useEffect(() => { primerCampo.current?.focus(); }, [modo, usuario]);
-
-  // Solo el administrador puede ver la lista de usuarios: sirve para comprobar el rol en la interfaz.
-  useEffect(() => {
-    if (usuario?.rol !== "administrador" || !token) return;
-    api.usuarios(token).then(setUsuarios).catch(() => setUsuarios(null));
-  }, [usuario, token]);
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,7 +47,7 @@ export function Cuenta({ usuario, token, onIniciar, onRegistrar, onSalir, onCerr
 
   return (
     <div className="hist-fondo" onClick={onCerrar}>
-      <section className="hist cuenta" role="dialog" aria-modal="true" aria-labelledby="cuenta-titulo" onClick={(e) => e.stopPropagation()}>
+      <section className={"hist cuenta" + (usuario?.rol === "administrador" ? " cuenta--admin" : "")} role="dialog" aria-modal="true" aria-labelledby="cuenta-titulo" onClick={(e) => e.stopPropagation()}>
         <header className="hist__cabecera">
           <div>
             <p className="hist__etiqueta">{usuario ? "Sesión iniciada" : "Tu cuenta"}</p>
@@ -69,14 +62,7 @@ export function Cuenta({ usuario, token, onIniciar, onRegistrar, onSalir, onCerr
               <div><dt>Correo</dt><dd>{usuario.correo}</dd></div>
               <div><dt>Rol</dt><dd>{usuario.rol}</dd></div>
             </dl>
-            {usuarios && (
-              <div className="cuenta__admin">
-                <p className="hist__etiqueta">Usuarios registrados (solo administradores)</p>
-                <ul>
-                  {usuarios.map((u) => <li key={u.id}><span>{u.correo}</span><em>{u.rol}</em></li>)}
-                </ul>
-              </div>
-            )}
+            {usuario.rol === "administrador" && token && <PanelAdmin token={token} yoId={usuario.id} />}
             <button type="button" className="cuenta__boton cuenta__boton--sec" onClick={() => { onSalir(); onCerrar(); }}>
               Cerrar sesión
             </button>
